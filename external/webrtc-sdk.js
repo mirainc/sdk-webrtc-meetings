@@ -89,6 +89,7 @@ require.config({
             'sdp-transform/index',
             'sdp-interop/transform',
             'sdp-interop/array-equals',
+            'WebRTC_SDK/utilities/RTCFirefoxSDPConstants',
             'sdp-interop/interop',
             'sdp-interop/index',
             'WebRTC_SDK/RTCPeer',
@@ -16197,7 +16198,7 @@ define("backbone", ["underscore","jquery"], (function (global) {
     }
 
 })(function () {
-
+"use strict";
 
 var hasStacks = false;
 try {
@@ -18808,11 +18809,15 @@ define('WebRTC_SDK/utilities/RTCUtils',['require','jquery','q','my.Class','under
                     Logger.error('RTCUtils: Unknown stream type. Stream label: ' + stream.bjn_label);
             }
             return streamType;
-        },
-
-        getRemoteStreamType: function(stream) {
-            return (stream.id === 'stream_label') ? 'remoteStream' : 'remoteContentStream';
-        }
+		},
+		
+		getRemoteStreamType: function(stream) {
+			if(stream.id.includes('video_stream_') || stream.id === 'audio_stream' || stream.id === 'stream_label') {
+				return 'remoteStream';
+			} else {
+				return 'remoteContentStream';
+			}
+		}
 
 	});
 
@@ -28902,7 +28907,7 @@ define('WebRTC_SDK/manager/RTCLocalMediaManager',['require','my.Class','undersco
             localStream: null,
             localAudioStream: null,
         	localVideoStream: null,
-        	remoteStream: null,
+        	remoteStreams: {},
             localAudioMuted: false,
             localVideoMuted: false,
             remoteAudioMuted: false,
@@ -29422,7 +29427,7 @@ define('WebRTC_SDK/manager/RTCLocalMediaManager',['require','my.Class','undersco
 
         updateStream: function(params) {
             if(!_.isUndefined(params.remoteStream)) {
-                this.model.set('remoteStream', params.remoteStream);
+                this.model.get('remoteStreams')[params.remoteStream.id] = params.remoteStream;
             }
         },
 
@@ -32592,6 +32597,10 @@ define('WebRTC_SDK/models/RTCPeerModel',['require','backbone','WebRTC_SDK/utilit
 
         setStreamByType: function(stream, type, newValue) {
             var streamType = (type === 'local') ? RTCUtils.getLocalStreamType(stream) : RTCUtils.getRemoteStreamType(stream);
+            if(streamType ===  'remoteStream') {
+                this.get('remoteStreams')[stream.id] = newValue;
+                this.trigger('remoteStreamAdded', newValue, 0);
+            }
             this.set(streamType, newValue);
         }
 
@@ -32620,7 +32629,7 @@ define('WebRTC_SDK/models/RTCPeerModel',['require','backbone','WebRTC_SDK/utilit
                 localVideoStream        : null,
                 localAudioStream        : null,
                 localContentStream      : null,
-                remoteStream            : null,
+                remoteStreams           : {},
                 remoteContentStream     : null,
                 closed                  : false,
                 signalingState          : ''
@@ -33870,7 +33879,33 @@ module.exports = function arrayEquals(array) {
 
 });
 
-define('sdp-interop/interop',['require','exports','module','sdp-interop/transform','sdp-interop/array-equals'],function (require, exports, module) {/* Copyright @ 2015 Atlassian Pty Ltd
+define('WebRTC_SDK/utilities/RTCFirefoxSDPConstants',['require','my.Class','browserDetector'],function (require) {
+    var my                  = require('my.Class');
+    var BrowserDetector     = require('browserDetector');
+	var RTCFirefoxSDPConstants = my.Class({
+
+		constructor: function() {
+            this.FIREFOX_SDP_OBJ = {
+                SDP_MID_0: 'sdparta_0',
+                SDP_MID_1: 'sdparta_1',
+                SDP_MID_2: 'sdparta_2'
+            };
+            if(BrowserDetector.browser === "firefox" && BrowserDetector.majorVersion >= 63) {
+                this.FIREFOX_SDP_OBJ = {
+                    SDP_MID_0: '0',
+                    SDP_MID_1: '1',
+                    SDP_MID_2: '2'
+                };
+            }
+		}
+
+	});
+
+	return new RTCFirefoxSDPConstants();
+
+});
+
+define('sdp-interop/interop',['require','exports','module','sdp-interop/transform','sdp-interop/array-equals','WebRTC_SDK/utilities/RTCFirefoxSDPConstants'],function (require, exports, module) {/* Copyright @ 2015 Atlassian Pty Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33891,6 +33926,7 @@ define('sdp-interop/interop',['require','exports','module','sdp-interop/transfor
 
 var transform = require('sdp-interop/transform');
 var arrayEquals = require('sdp-interop/array-equals');
+var firefoxSdpConstants = require('WebRTC_SDK/utilities/RTCFirefoxSDPConstants');
 
 function Interop() {
 
@@ -34585,13 +34621,13 @@ Interop.prototype.toUnifiedPlan = function(desc) {
     session.media.forEach(function(unifiedLine) {
         
         if(index == 0){
-            unifiedLine.mid = 'sdparta_0';
+            unifiedLine.mid = firefoxSdpConstants.FIREFOX_SDP_OBJ.SDP_MID_0;
         }
         else if(index == 1){
-            unifiedLine.mid = 'sdparta_1';
+            unifiedLine.mid = firefoxSdpConstants.FIREFOX_SDP_OBJ.SDP_MID_1;
         }
         else if(index == 2){
-            unifiedLine.mid = 'sdparta_2';
+            unifiedLine.mid = firefoxSdpConstants.FIREFOX_SDP_OBJ.SDP_MID_2;
         }
         mids.push(unifiedLine.mid);
         index++;
@@ -34642,7 +34678,7 @@ exports.Interop = require('sdp-interop/interop');
 
 });
 
-define('WebRTC_SDK/RTCPeer',['require','q','my.Class','underscore','backbone','Logger','adapter','WebRTC_SDK/utilities/RTCErrors','WebRTC_SDK/utilities/RTCBlueJay','WebRTC_SDK/RTCCallStats','WebRTC_SDK/RTCStates','WebRTC_SDK/utilities/RTCUtils','WebRTC_SDK/models/RTCPeerModel','WebRTC_SDK/manager/RTCStateManager','sdpUtils','sdp-interop/index','browserDetector'],function (require) {
+define('WebRTC_SDK/RTCPeer',['require','q','my.Class','underscore','backbone','Logger','adapter','WebRTC_SDK/utilities/RTCErrors','WebRTC_SDK/utilities/RTCBlueJay','WebRTC_SDK/RTCCallStats','WebRTC_SDK/RTCStates','WebRTC_SDK/utilities/RTCUtils','WebRTC_SDK/models/RTCPeerModel','WebRTC_SDK/manager/RTCStateManager','sdpUtils','sdp-interop/index','browserDetector','WebRTC_SDK/utilities/RTCFirefoxSDPConstants'],function (require) {
 
     var Q 					= require('q');
     var my   				= require('my.Class');
@@ -34660,7 +34696,8 @@ define('WebRTC_SDK/RTCPeer',['require','q','my.Class','underscore','backbone','L
     var SDPUtils            = require('sdpUtils');
     var SDPInterop          = require('sdp-interop/index');
     var BrowserDetector     = require('browserDetector');
-
+	var firefoxSdpConstants = require('WebRTC_SDK/utilities/RTCFirefoxSDPConstants');
+ 
     var RTCPeer = my.Class({
 
         iceRestartTimer: null,
@@ -35191,10 +35228,11 @@ define('WebRTC_SDK/RTCPeer',['require','q','my.Class','underscore','backbone','L
             var deferred = Q.defer();
             
             if (this.isFirefox) {
-                if (message.sdpMid === 'audio')
-                    message.sdpMid = 'sdparta_0';
+                if (message.sdpMid === 'audio'){
+                    message.sdpMid = firefoxSdpConstants.FIREFOX_SDP_OBJ.SDP_MID_0;					
+				}
                 else {
-                    message.sdpMid = 'sdparta_1';
+                    message.sdpMid = firefoxSdpConstants.FIREFOX_SDP_OBJ.SDP_MID_1;
                     message.sdpMLineIndex = 1;
                 }
             }
@@ -35808,7 +35846,7 @@ define('WebRTC_SDK/manager/RTCScreenSharingManager',['require','underscore','jqu
 *
 */
 
-define('WebRTC_SDK/manager/RTCPeerConnectionManager',['require','q','my.Class','underscore','backbone','Logger','WebRTC_SDK/RTCPeer','WebRTC_SDK/utilities/RTCBlueJay','WebRTC_SDK/RTCStates','sdpUtils','WebRTC_SDK/manager/RTCStateManager','WebRTC_SDK/manager/RTCSignallingManager','WebRTC_SDK/manager/RTCTransactionManager','WebRTC_SDK/manager/RTCScreenSharingManager','WebRTC_SDK/utilities/RTCErrors','browserDetector'],function (require) {
+define('WebRTC_SDK/manager/RTCPeerConnectionManager',['require','q','my.Class','underscore','backbone','Logger','WebRTC_SDK/RTCPeer','WebRTC_SDK/utilities/RTCBlueJay','WebRTC_SDK/RTCStates','sdpUtils','WebRTC_SDK/manager/RTCStateManager','WebRTC_SDK/manager/RTCSignallingManager','WebRTC_SDK/manager/RTCTransactionManager','WebRTC_SDK/manager/RTCScreenSharingManager','WebRTC_SDK/utilities/RTCErrors','browserDetector','WebRTC_SDK/utilities/RTCFirefoxSDPConstants'],function (require) {
 
     var Q                       = require('q');
     var my                      = require('my.Class');
@@ -35825,6 +35863,7 @@ define('WebRTC_SDK/manager/RTCPeerConnectionManager',['require','q','my.Class','
     var RTCScreenSharingManager = require('WebRTC_SDK/manager/RTCScreenSharingManager');
     var RTCErrors               = require('WebRTC_SDK/utilities/RTCErrors');
     var BrowserDetector         = require('browserDetector');
+    var firefoxSdpConstants 	= require('WebRTC_SDK/utilities/RTCFirefoxSDPConstants');
 
     var RTCPeerConnectionManager = my.Class({
         config: {
@@ -35917,9 +35956,9 @@ define('WebRTC_SDK/manager/RTCPeerConnectionManager',['require','q','my.Class','
             if (iceCandidate) {
                 
                 if (BrowserDetector.browser === 'firefox') {
-                    if (iceCandidate.sdpMid === 'sdparta_0')
+                    if (iceCandidate.sdpMid === firefoxSdpConstants.FIREFOX_SDP_OBJ.SDP_MID_0)
                          iceCandidate.sdpMid = 'audio';
-                     else if (iceCandidate.sdpMid === 'sdparta_1' || iceCandidate.sdpMid === 'sdparta_2') {
+                     else if (iceCandidate.sdpMid === firefoxSdpConstants.FIREFOX_SDP_OBJ.SDP_MID_1 || iceCandidate.sdpMid === firefoxSdpConstants.FIREFOX_SDP_OBJ.SDP_MID_2) {
                          iceCandidate.sdpMid = 'video';
                          iceCandidate.sdpMLineIndex = 1;
                     }
@@ -36622,7 +36661,7 @@ define('WebRTC_SDK/RTCController',['require','q','my.Class','underscore','backbo
             localVideoStream        : null,
             localAudioStream        : null,
             previewStream           : null,
-            remoteStream            : null,
+            remoteStreams           : {},
             localContentStream      : null,
             remoteContentStream     : null,
             connectionState         : '', // ICE Connection states
@@ -36778,7 +36817,7 @@ define('WebRTC_SDK/RTCController',['require','q','my.Class','underscore','backbo
         createPeerConnection: function(params) {
             this.peerConnectionManager.createPeer(params);
 
-            this.peerConnectionManager.peer.model.on('change:remoteStream', this.onRemoteStreamChanged);
+            this.peerConnectionManager.peer.model.on('remoteStreamAdded', this.onRemoteStreamChanged);
             this.peerConnectionManager.peer.model.on('change:remoteContentStream', this.onRemoteContentStreamChanged);
 
             this.peerConnectionManager.peer.on('iceConnectionClosed', this.onIceConnectivityClosed);
@@ -36934,9 +36973,14 @@ define('WebRTC_SDK/RTCController',['require','q','my.Class','underscore','backbo
             this.model.set('previewStream', model.get('previewStream'));
         },
 
-        onRemoteStreamChanged: function(model) {
-            this.model.set('remoteStream', model.get('remoteStream'));
-            this.localMediaManager.updateStream({remoteStream: model.get('remoteStream')});
+        onRemoteStreamChanged: function(stream, csrc) {
+            this.model.get('remoteStreams')[stream.id] = stream;
+            if(!_.isNull(stream) && !_.isUndefined(stream)) {
+                this.localMediaManager.updateStream({remoteStream: stream});
+            }
+  
+            this.trigger('remoteStreamAdded', stream, csrc);
+            Logger.debug("onRemoteStreamAdded: "+stream.id+" csrc"+csrc);
         },
 
         onRemoteContentStreamChanged: function(model) {
@@ -37959,11 +38003,11 @@ define('clientSDK/src/Roster',['require','underscore','my.Class','./models/Parti
  * 
  */
 /**
- * bluebird build version 3.5.3
+ * bluebird build version 3.7.2
  * Features enabled: core, race, call_get, generators, map, nodeify, promisify, props, reduce, settle, some, using, timers, filter, any, each
 */
 !function(e){if("object"==typeof exports&&"undefined"!=typeof module)module.exports=e();else if("function"==typeof define&&define.amd)define('bluebird',[],e);else{var f;"undefined"!=typeof window?f=window:"undefined"!=typeof global?f=global:"undefined"!=typeof self&&(f=self),f.Promise=e()}}(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof _dereq_=="function"&&_dereq_;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof _dereq_=="function"&&_dereq_;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(_dereq_,module,exports){
-
+"use strict";
 module.exports = function(Promise) {
 var SomePromiseArray = Promise._SomePromiseArray;
 function any(promises) {
@@ -37986,12 +38030,11 @@ Promise.prototype.any = function () {
 };
 
 },{}],2:[function(_dereq_,module,exports){
-
+"use strict";
 var firstLineError;
 try {throw new Error(); } catch (e) {firstLineError = e;}
 var schedule = _dereq_("./schedule");
 var Queue = _dereq_("./queue");
-var util = _dereq_("./util");
 
 function Async() {
     this._customScheduler = false;
@@ -37999,7 +38042,6 @@ function Async() {
     this._lateQueue = new Queue(16);
     this._normalQueue = new Queue(16);
     this._haveDrainedQueues = false;
-    this._trampolineEnabled = true;
     var self = this;
     this.drainQueues = function () {
         self._drainQueues();
@@ -38016,16 +38058,6 @@ Async.prototype.setScheduler = function(fn) {
 
 Async.prototype.hasCustomScheduler = function() {
     return this._customScheduler;
-};
-
-Async.prototype.enableTrampoline = function() {
-    this._trampolineEnabled = true;
-};
-
-Async.prototype.disableTrampolineIfNecessary = function() {
-    if (util.hasDevTools) {
-        this._trampolineEnabled = false;
-    }
 };
 
 Async.prototype.haveItemsQueued = function () {
@@ -38076,43 +38108,10 @@ function AsyncSettlePromises(promise) {
     this._queueTick();
 }
 
-if (!util.hasDevTools) {
-    Async.prototype.invokeLater = AsyncInvokeLater;
-    Async.prototype.invoke = AsyncInvoke;
-    Async.prototype.settlePromises = AsyncSettlePromises;
-} else {
-    Async.prototype.invokeLater = function (fn, receiver, arg) {
-        if (this._trampolineEnabled) {
-            AsyncInvokeLater.call(this, fn, receiver, arg);
-        } else {
-            this._schedule(function() {
-                setTimeout(function() {
-                    fn.call(receiver, arg);
-                }, 100);
-            });
-        }
-    };
+Async.prototype.invokeLater = AsyncInvokeLater;
+Async.prototype.invoke = AsyncInvoke;
+Async.prototype.settlePromises = AsyncSettlePromises;
 
-    Async.prototype.invoke = function (fn, receiver, arg) {
-        if (this._trampolineEnabled) {
-            AsyncInvoke.call(this, fn, receiver, arg);
-        } else {
-            this._schedule(function() {
-                fn.call(receiver, arg);
-            });
-        }
-    };
-
-    Async.prototype.settlePromises = function(promise) {
-        if (this._trampolineEnabled) {
-            AsyncSettlePromises.call(this, promise);
-        } else {
-            this._schedule(function() {
-                promise._settlePromises();
-            });
-        }
-    };
-}
 
 function _drainQueue(queue) {
     while (queue.length() > 0) {
@@ -38152,8 +38151,8 @@ Async.prototype._reset = function () {
 module.exports = Async;
 module.exports.firstLineError = firstLineError;
 
-},{"./queue":26,"./schedule":29,"./util":36}],3:[function(_dereq_,module,exports){
-
+},{"./queue":26,"./schedule":29}],3:[function(_dereq_,module,exports){
+"use strict";
 module.exports = function(Promise, INTERNAL, tryConvertToPromise, debug) {
 var calledBind = false;
 var rejectThis = function(_, e) {
@@ -38222,7 +38221,7 @@ Promise.bind = function (thisArg, value) {
 };
 
 },{}],4:[function(_dereq_,module,exports){
-
+"use strict";
 var old;
 if (typeof Promise !== "undefined") old = Promise;
 function noConflict() {
@@ -38235,7 +38234,7 @@ bluebird.noConflict = noConflict;
 module.exports = bluebird;
 
 },{"./promise":22}],5:[function(_dereq_,module,exports){
-
+"use strict";
 var cr = Object.create;
 if (cr) {
     var callerCache = cr(null);
@@ -38360,7 +38359,7 @@ Promise.prototype.get = function (propertyName) {
 };
 
 },{"./util":36}],6:[function(_dereq_,module,exports){
-
+"use strict";
 module.exports = function(Promise, PromiseArray, apiRejection, debug) {
 var util = _dereq_("./util");
 var tryCatch = util.tryCatch;
@@ -38491,7 +38490,7 @@ Promise.prototype._resultCancelled = function() {
 };
 
 },{"./util":36}],7:[function(_dereq_,module,exports){
-
+"use strict";
 module.exports = function(NEXT_FILTER) {
 var util = _dereq_("./util");
 var getKeys = _dereq_("./es5").keys;
@@ -38535,7 +38534,7 @@ return catchFilter;
 };
 
 },{"./es5":13,"./util":36}],8:[function(_dereq_,module,exports){
-
+"use strict";
 module.exports = function(Promise) {
 var longStackTraces = false;
 var contextStack = [];
@@ -38606,9 +38605,9 @@ return Context;
 };
 
 },{}],9:[function(_dereq_,module,exports){
-
-module.exports = function(Promise, Context) {
-var getDomain = Promise._getDomain;
+"use strict";
+module.exports = function(Promise, Context,
+    enableAsyncHooks, disableAsyncHooks) {
 var async = Promise._async;
 var Warning = _dereq_("./errors").Warning;
 var util = _dereq_("./util");
@@ -38638,6 +38637,34 @@ var longStackTraces = !!(util.env("BLUEBIRD_LONG_STACK_TRACES") != 0 &&
 var wForgottenReturn = util.env("BLUEBIRD_W_FORGOTTEN_RETURN") != 0 &&
     (warnings || !!util.env("BLUEBIRD_W_FORGOTTEN_RETURN"));
 
+var deferUnhandledRejectionCheck;
+(function() {
+    var promises = [];
+
+    function unhandledRejectionCheck() {
+        for (var i = 0; i < promises.length; ++i) {
+            promises[i]._notifyUnhandledRejection();
+        }
+        unhandledRejectionClear();
+    }
+
+    function unhandledRejectionClear() {
+        promises.length = 0;
+    }
+
+    deferUnhandledRejectionCheck = function(promise) {
+        promises.push(promise);
+        setTimeout(unhandledRejectionCheck, 1);
+    };
+
+    es5.defineProperty(Promise, "_unhandledRejectionCheck", {
+        value: unhandledRejectionCheck
+    });
+    es5.defineProperty(Promise, "_unhandledRejectionClear", {
+        value: unhandledRejectionClear
+    });
+})();
+
 Promise.prototype.suppressUnhandledRejections = function() {
     var target = this._target();
     target._bitField = ((target._bitField & (~1048576)) |
@@ -38647,10 +38674,7 @@ Promise.prototype.suppressUnhandledRejections = function() {
 Promise.prototype._ensurePossibleRejectionHandled = function () {
     if ((this._bitField & 524288) !== 0) return;
     this._setRejectionIsUnhandled();
-    var self = this;
-    setTimeout(function() {
-        self._notifyUnhandledRejection();
-    }, 1);
+    deferUnhandledRejectionCheck(this);
 };
 
 Promise.prototype._notifyUnhandledRejectionIsHandled = function () {
@@ -38708,19 +38732,13 @@ Promise.prototype._warn = function(message, shouldUseOwnTrace, promise) {
 };
 
 Promise.onPossiblyUnhandledRejection = function (fn) {
-    var domain = getDomain();
-    possiblyUnhandledRejection =
-        typeof fn === "function" ? (domain === null ?
-                                            fn : util.domainBind(domain, fn))
-                                 : undefined;
+    var context = Promise._getContext();
+    possiblyUnhandledRejection = util.contextBind(context, fn);
 };
 
 Promise.onUnhandledRejectionHandled = function (fn) {
-    var domain = getDomain();
-    unhandledRejectionHandled =
-        typeof fn === "function" ? (domain === null ?
-                                            fn : util.domainBind(domain, fn))
-                                 : undefined;
+    var context = Promise._getContext();
+    unhandledRejectionHandled = util.contextBind(context, fn);
 };
 
 var disableLongStackTraces = function() {};
@@ -38741,14 +38759,12 @@ Promise.longStackTraces = function () {
             Promise.prototype._attachExtraTrace = Promise_attachExtraTrace;
             Promise.prototype._dereferenceTrace = Promise_dereferenceTrace;
             Context.deactivateLongStackTraces();
-            async.enableTrampoline();
             config.longStackTraces = false;
         };
         Promise.prototype._captureStackTrace = longStackTracesCaptureStackTrace;
         Promise.prototype._attachExtraTrace = longStackTracesAttachExtraTrace;
         Promise.prototype._dereferenceTrace = longStackTracesDereferenceTrace;
         Context.activateLongStackTraces();
-        async.disableTrampolineIfNecessary();
     }
 };
 
@@ -38756,43 +38772,85 @@ Promise.hasLongStackTraces = function () {
     return config.longStackTraces && longStackTracesIsSupported();
 };
 
+
+var legacyHandlers = {
+    unhandledrejection: {
+        before: function() {
+            var ret = util.global.onunhandledrejection;
+            util.global.onunhandledrejection = null;
+            return ret;
+        },
+        after: function(fn) {
+            util.global.onunhandledrejection = fn;
+        }
+    },
+    rejectionhandled: {
+        before: function() {
+            var ret = util.global.onrejectionhandled;
+            util.global.onrejectionhandled = null;
+            return ret;
+        },
+        after: function(fn) {
+            util.global.onrejectionhandled = fn;
+        }
+    }
+};
+
 var fireDomEvent = (function() {
+    var dispatch = function(legacy, e) {
+        if (legacy) {
+            var fn;
+            try {
+                fn = legacy.before();
+                return !util.global.dispatchEvent(e);
+            } finally {
+                legacy.after(fn);
+            }
+        } else {
+            return !util.global.dispatchEvent(e);
+        }
+    };
     try {
         if (typeof CustomEvent === "function") {
             var event = new CustomEvent("CustomEvent");
             util.global.dispatchEvent(event);
             return function(name, event) {
+                name = name.toLowerCase();
                 var eventData = {
                     detail: event,
                     cancelable: true
                 };
+                var domEvent = new CustomEvent(name, eventData);
                 es5.defineProperty(
-                    eventData, "promise", {value: event.promise});
-                es5.defineProperty(eventData, "reason", {value: event.reason});
-                var domEvent = new CustomEvent(name.toLowerCase(), eventData);
-                return !util.global.dispatchEvent(domEvent);
+                    domEvent, "promise", {value: event.promise});
+                es5.defineProperty(
+                    domEvent, "reason", {value: event.reason});
+
+                return dispatch(legacyHandlers[name], domEvent);
             };
         } else if (typeof Event === "function") {
             var event = new Event("CustomEvent");
             util.global.dispatchEvent(event);
             return function(name, event) {
-                var domEvent = new Event(name.toLowerCase(), {
+                name = name.toLowerCase();
+                var domEvent = new Event(name, {
                     cancelable: true
                 });
                 domEvent.detail = event;
                 es5.defineProperty(domEvent, "promise", {value: event.promise});
                 es5.defineProperty(domEvent, "reason", {value: event.reason});
-                return !util.global.dispatchEvent(domEvent);
+                return dispatch(legacyHandlers[name], domEvent);
             };
         } else {
             var event = document.createEvent("CustomEvent");
             event.initCustomEvent("testingtheevent", false, true, {});
             util.global.dispatchEvent(event);
             return function(name, event) {
+                name = name.toLowerCase();
                 var domEvent = document.createEvent("CustomEvent");
-                domEvent.initCustomEvent(name.toLowerCase(), false, true,
+                domEvent.initCustomEvent(name, false, true,
                     event);
-                return !util.global.dispatchEvent(domEvent);
+                return dispatch(legacyHandlers[name], domEvent);
             };
         }
     } catch (e) {}
@@ -38908,6 +38966,18 @@ Promise.config = function(opts) {
         } else if (!opts.monitoring && config.monitoring) {
             config.monitoring = false;
             Promise.prototype._fireEvent = defaultFireEvent;
+        }
+    }
+    if ("asyncHooks" in opts && util.nodeSupportsAsyncResource) {
+        var prev = config.asyncHooks;
+        var cur = !!opts.asyncHooks;
+        if (prev !== cur) {
+            config.asyncHooks = cur;
+            if (cur) {
+                enableAsyncHooks();
+            } else {
+                disableAsyncHooks();
+            }
         }
     }
     return Promise;
@@ -39297,8 +39367,8 @@ function parseLineInfo(line) {
 
 function setBounds(firstLineError, lastLineError) {
     if (!longStackTracesIsSupported()) return;
-    var firstStackLines = firstLineError.stack.split("\n");
-    var lastStackLines = lastLineError.stack.split("\n");
+    var firstStackLines = (firstLineError.stack || "").split("\n");
+    var lastStackLines = (lastLineError.stack || "").split("\n");
     var firstIndex = -1;
     var lastIndex = -1;
     var firstFileName;
@@ -39507,12 +39577,16 @@ var config = {
     warnings: warnings,
     longStackTraces: false,
     cancellation: false,
-    monitoring: false
+    monitoring: false,
+    asyncHooks: false
 };
 
 if (longStackTraces) Promise.longStackTraces();
 
 return {
+    asyncHooks: function() {
+        return config.asyncHooks;
+    },
     longStackTraces: function() {
         return config.longStackTraces;
     },
@@ -39542,7 +39616,7 @@ return {
 };
 
 },{"./errors":12,"./es5":13,"./util":36}],10:[function(_dereq_,module,exports){
-
+"use strict";
 module.exports = function(Promise) {
 function returner() {
     return this.value;
@@ -39590,7 +39664,7 @@ Promise.prototype.catchReturn = function (value) {
 };
 
 },{}],11:[function(_dereq_,module,exports){
-
+"use strict";
 module.exports = function(Promise, INTERNAL) {
 var PromiseReduce = Promise.reduce;
 var PromiseAll = Promise.all;
@@ -39622,7 +39696,7 @@ Promise.mapSeries = PromiseMapSeries;
 
 
 },{}],12:[function(_dereq_,module,exports){
-
+"use strict";
 var es5 = _dereq_("./es5");
 var Objectfreeze = es5.freeze;
 var util = _dereq_("./util");
@@ -39822,7 +39896,7 @@ if (isES5) {
 }
 
 },{}],14:[function(_dereq_,module,exports){
-
+"use strict";
 module.exports = function(Promise, INTERNAL) {
 var PromiseMap = Promise.map;
 
@@ -39836,7 +39910,7 @@ Promise.filter = function (promises, fn, options) {
 };
 
 },{}],15:[function(_dereq_,module,exports){
-
+"use strict";
 module.exports = function(Promise, tryConvertToPromise, NEXT_FILTER) {
 var util = _dereq_("./util");
 var CancellationError = Promise.CancellationError;
@@ -39984,7 +40058,7 @@ return PassThroughHandlerContext;
 };
 
 },{"./catch_filter":7,"./util":36}],16:[function(_dereq_,module,exports){
-
+"use strict";
 module.exports = function(Promise,
                           apiRejection,
                           INTERNAL,
@@ -40209,10 +40283,9 @@ Promise.spawn = function (generatorFunction) {
 };
 
 },{"./errors":12,"./util":36}],17:[function(_dereq_,module,exports){
-
+"use strict";
 module.exports =
-function(Promise, PromiseArray, tryConvertToPromise, INTERNAL, async,
-         getDomain) {
+function(Promise, PromiseArray, tryConvertToPromise, INTERNAL, async) {
 var util = _dereq_("./util");
 var canEvaluate = util.canEvaluate;
 var tryCatch = util.tryCatch;
@@ -40358,10 +40431,8 @@ Promise.join = function () {
 
                 if (!ret._isFateSealed()) {
                     if (holder.asyncNeeded) {
-                        var domain = getDomain();
-                        if (domain !== null) {
-                            holder.fn = util.domainBind(domain, holder.fn);
-                        }
+                        var context = Promise._getContext();
+                        holder.fn = util.contextBind(context, holder.fn);
                     }
                     ret._setAsyncGuaranteed();
                     ret._setOnCancel(holder);
@@ -40379,14 +40450,13 @@ Promise.join = function () {
 };
 
 },{"./util":36}],18:[function(_dereq_,module,exports){
-
+"use strict";
 module.exports = function(Promise,
                           PromiseArray,
                           apiRejection,
                           tryConvertToPromise,
                           INTERNAL,
                           debug) {
-var getDomain = Promise._getDomain;
 var util = _dereq_("./util");
 var tryCatch = util.tryCatch;
 var errorObj = util.errorObj;
@@ -40395,8 +40465,8 @@ var async = Promise._async;
 function MappingPromiseArray(promises, fn, limit, _filter) {
     this.constructor$(promises);
     this._promise._captureStackTrace();
-    var domain = getDomain();
-    this._callback = domain === null ? fn : util.domainBind(domain, fn);
+    var context = Promise._getContext();
+    this._callback = util.contextBind(context, fn);
     this._preservedValues = _filter === INTERNAL
         ? new Array(this.length())
         : null;
@@ -40404,6 +40474,14 @@ function MappingPromiseArray(promises, fn, limit, _filter) {
     this._inFlight = 0;
     this._queue = [];
     async.invoke(this._asyncInit, this, undefined);
+    if (util.isArray(promises)) {
+        for (var i = 0; i < promises.length; ++i) {
+            var maybePromise = promises[i];
+            if (maybePromise instanceof Promise) {
+                maybePromise.suppressUnhandledRejections();
+            }
+        }
+    }
 }
 util.inherits(MappingPromiseArray, PromiseArray);
 
@@ -40549,7 +40627,7 @@ Promise.map = function (promises, fn, options, _filter) {
 };
 
 },{"./util":36}],19:[function(_dereq_,module,exports){
-
+"use strict";
 module.exports =
 function(Promise, INTERNAL, tryConvertToPromise, apiRejection, debug) {
 var util = _dereq_("./util");
@@ -40606,7 +40684,7 @@ Promise.prototype._resolveFromSyncValue = function (value) {
 };
 
 },{"./util":36}],20:[function(_dereq_,module,exports){
-
+"use strict";
 var util = _dereq_("./util");
 var maybeWrapAsError = util.maybeWrapAsError;
 var errors = _dereq_("./errors");
@@ -40659,7 +40737,7 @@ function nodebackForPromise(promise, multiArgs) {
 module.exports = nodebackForPromise;
 
 },{"./errors":12,"./es5":13,"./util":36}],21:[function(_dereq_,module,exports){
-
+"use strict";
 module.exports = function(Promise) {
 var util = _dereq_("./util");
 var async = Promise._async;
@@ -40719,7 +40797,7 @@ Promise.prototype.asCallback = Promise.prototype.nodeify = function (nodeback,
 };
 
 },{"./util":36}],22:[function(_dereq_,module,exports){
-
+"use strict";
 module.exports = function() {
 var makeSelfResolutionError = function () {
     return new TypeError("circular promise resolution chain\u000a\u000a    See http://goo.gl/MqrFmX\u000a");
@@ -40733,20 +40811,42 @@ var apiRejection = function(msg) {
 function Proxyable() {}
 var UNDEFINED_BINDING = {};
 var util = _dereq_("./util");
+util.setReflectHandler(reflectHandler);
 
-var getDomain;
-if (util.isNode) {
-    getDomain = function() {
-        var ret = process.domain;
-        if (ret === undefined) ret = null;
-        return ret;
-    };
-} else {
-    getDomain = function() {
+var getDomain = function() {
+    var domain = process.domain;
+    if (domain === undefined) {
         return null;
+    }
+    return domain;
+};
+var getContextDefault = function() {
+    return null;
+};
+var getContextDomain = function() {
+    return {
+        domain: getDomain(),
+        async: null
     };
-}
-util.notEnumerableProp(Promise, "_getDomain", getDomain);
+};
+var AsyncResource = util.isNode && util.nodeSupportsAsyncResource ?
+    _dereq_("async_hooks").AsyncResource : null;
+var getContextAsyncHooks = function() {
+    return {
+        domain: getDomain(),
+        async: new AsyncResource("Bluebird::Promise")
+    };
+};
+var getContext = util.isNode ? getContextDomain : getContextDefault;
+util.notEnumerableProp(Promise, "_getContext", getContext);
+var enableAsyncHooks = function() {
+    getContext = getContextAsyncHooks;
+    util.notEnumerableProp(Promise, "_getContext", getContextAsyncHooks);
+};
+var disableAsyncHooks = function() {
+    getContext = getContextDomain;
+    util.notEnumerableProp(Promise, "_getContext", getContextDomain);
+};
 
 var es5 = _dereq_("./es5");
 var Async = _dereq_("./async");
@@ -40770,7 +40870,9 @@ var PromiseArray =
 var Context = _dereq_("./context")(Promise);
  /*jshint unused:false*/
 var createContext = Context.create;
-var debug = _dereq_("./debuggability")(Promise, Context);
+
+var debug = _dereq_("./debuggability")(Promise, Context,
+    enableAsyncHooks, disableAsyncHooks);
 var CapturedTrace = debug.CapturedTrace;
 var PassThroughHandlerContext =
     _dereq_("./finally")(Promise, tryConvertToPromise, NEXT_FILTER);
@@ -40822,6 +40924,11 @@ Promise.prototype.caught = Promise.prototype["catch"] = function (fn) {
         }
         catchInstances.length = j;
         fn = arguments[i];
+
+        if (typeof fn !== "function") {
+            throw new TypeError("The last argument to .catch() " +
+                "must be a function, got " + util.toString(fn));
+        }
         return this.then(undefined, catchFilter(catchInstances, fn, this));
     }
     return this.then(undefined, fn);
@@ -40962,7 +41069,7 @@ Promise.prototype._then = function (
         this._fireEvent("promiseChained", this, promise);
     }
 
-    var domain = getDomain();
+    var context = getContext();
     if (!((bitField & 50397184) === 0)) {
         var handler, value, settler = target._settlePromiseCtx;
         if (((bitField & 33554432) !== 0)) {
@@ -40980,15 +41087,14 @@ Promise.prototype._then = function (
         }
 
         async.invoke(settler, target, {
-            handler: domain === null ? handler
-                : (typeof handler === "function" &&
-                    util.domainBind(domain, handler)),
+            handler: util.contextBind(context, handler),
             promise: promise,
             receiver: receiver,
             value: value
         });
     } else {
-        target._addCallbacks(didFulfill, didReject, promise, receiver, domain);
+        target._addCallbacks(didFulfill, didReject, promise,
+                receiver, context);
     }
 
     return promise;
@@ -41049,7 +41155,15 @@ Promise.prototype._setWillBeCancelled = function() {
 
 Promise.prototype._setAsyncGuaranteed = function() {
     if (async.hasCustomScheduler()) return;
-    this._bitField = this._bitField | 134217728;
+    var bitField = this._bitField;
+    this._bitField = bitField |
+        (((bitField & 536870912) >> 2) ^
+        134217728);
+};
+
+Promise.prototype._setNoAsyncGuarantee = function() {
+    this._bitField = (this._bitField | 536870912) &
+        (~134217728);
 };
 
 Promise.prototype._receiverAt = function (index) {
@@ -41104,7 +41218,7 @@ Promise.prototype._addCallbacks = function (
     reject,
     promise,
     receiver,
-    domain
+    context
 ) {
     var index = this._length();
 
@@ -41117,12 +41231,10 @@ Promise.prototype._addCallbacks = function (
         this._promise0 = promise;
         this._receiver0 = receiver;
         if (typeof fulfill === "function") {
-            this._fulfillmentHandler0 =
-                domain === null ? fulfill : util.domainBind(domain, fulfill);
+            this._fulfillmentHandler0 = util.contextBind(context, fulfill);
         }
         if (typeof reject === "function") {
-            this._rejectionHandler0 =
-                domain === null ? reject : util.domainBind(domain, reject);
+            this._rejectionHandler0 = util.contextBind(context, reject);
         }
     } else {
         var base = index * 4 - 4;
@@ -41130,11 +41242,11 @@ Promise.prototype._addCallbacks = function (
         this[base + 3] = receiver;
         if (typeof fulfill === "function") {
             this[base + 0] =
-                domain === null ? fulfill : util.domainBind(domain, fulfill);
+                util.contextBind(context, fulfill);
         }
         if (typeof reject === "function") {
             this[base + 1] =
-                domain === null ? reject : util.domainBind(domain, reject);
+                util.contextBind(context, reject);
         }
     }
     this._setLength(index + 1);
@@ -41154,6 +41266,7 @@ Promise.prototype._resolveCallback = function(value, shouldBind) {
 
     if (shouldBind) this._propagateFrom(maybePromise, 2);
 
+
     var promise = maybePromise._target();
 
     if (promise === this) {
@@ -41170,7 +41283,7 @@ Promise.prototype._resolveCallback = function(value, shouldBind) {
         }
         this._setFollowing();
         this._setLength(0);
-        this._setFollowee(promise);
+        this._setFollowee(maybePromise);
     } else if (((bitField & 33554432) !== 0)) {
         this._fulfill(promise._value());
     } else if (((bitField & 16777216) !== 0)) {
@@ -41429,6 +41542,14 @@ Promise.prototype._settledValue = function() {
     }
 };
 
+if (typeof Symbol !== "undefined" && Symbol.toStringTag) {
+    es5.defineProperty(Promise.prototype, Symbol.toStringTag, {
+        get: function () {
+            return "Object";
+        }
+    });
+}
+
 function deferResolve(v) {this.promise._resolveCallback(v);}
 function deferReject(v) {this.promise._rejectCallback(v, false);}
 
@@ -41453,14 +41574,12 @@ _dereq_("./cancel")(Promise, PromiseArray, apiRejection, debug);
 _dereq_("./direct_resolve")(Promise);
 _dereq_("./synchronous_inspection")(Promise);
 _dereq_("./join")(
-    Promise, PromiseArray, tryConvertToPromise, INTERNAL, async, getDomain);
+    Promise, PromiseArray, tryConvertToPromise, INTERNAL, async);
 Promise.Promise = Promise;
-Promise.version = "3.5.3";
-_dereq_('./map.js')(Promise, PromiseArray, apiRejection, tryConvertToPromise, INTERNAL, debug);
+Promise.version = "3.7.2";
 _dereq_('./call_get.js')(Promise);
-_dereq_('./using.js')(Promise, apiRejection, tryConvertToPromise, createContext, INTERNAL, debug);
-_dereq_('./timers.js')(Promise, INTERNAL, debug);
 _dereq_('./generators.js')(Promise, apiRejection, INTERNAL, tryConvertToPromise, Proxyable, debug);
+_dereq_('./map.js')(Promise, PromiseArray, apiRejection, tryConvertToPromise, INTERNAL, debug);
 _dereq_('./nodeify.js')(Promise);
 _dereq_('./promisify.js')(Promise, INTERNAL);
 _dereq_('./props.js')(Promise, PromiseArray, tryConvertToPromise, apiRejection);
@@ -41468,9 +41587,11 @@ _dereq_('./race.js')(Promise, INTERNAL, tryConvertToPromise, apiRejection);
 _dereq_('./reduce.js')(Promise, PromiseArray, apiRejection, tryConvertToPromise, INTERNAL, debug);
 _dereq_('./settle.js')(Promise, PromiseArray, debug);
 _dereq_('./some.js')(Promise, PromiseArray, apiRejection);
-_dereq_('./filter.js')(Promise, INTERNAL);
-_dereq_('./each.js')(Promise, INTERNAL);
+_dereq_('./timers.js')(Promise, INTERNAL, debug);
+_dereq_('./using.js')(Promise, apiRejection, tryConvertToPromise, createContext, INTERNAL, debug);
 _dereq_('./any.js')(Promise);
+_dereq_('./each.js')(Promise, INTERNAL);
+_dereq_('./filter.js')(Promise, INTERNAL);
                                                          
     util.toFastProperties(Promise);                                          
     util.toFastProperties(Promise.prototype);                                
@@ -41496,8 +41617,8 @@ _dereq_('./any.js')(Promise);
 
 };
 
-},{"./any.js":1,"./async":2,"./bind":3,"./call_get.js":5,"./cancel":6,"./catch_filter":7,"./context":8,"./debuggability":9,"./direct_resolve":10,"./each.js":11,"./errors":12,"./es5":13,"./filter.js":14,"./finally":15,"./generators.js":16,"./join":17,"./map.js":18,"./method":19,"./nodeback":20,"./nodeify.js":21,"./promise_array":23,"./promisify.js":24,"./props.js":25,"./race.js":27,"./reduce.js":28,"./settle.js":30,"./some.js":31,"./synchronous_inspection":32,"./thenables":33,"./timers.js":34,"./using.js":35,"./util":36}],23:[function(_dereq_,module,exports){
-
+},{"./any.js":1,"./async":2,"./bind":3,"./call_get.js":5,"./cancel":6,"./catch_filter":7,"./context":8,"./debuggability":9,"./direct_resolve":10,"./each.js":11,"./errors":12,"./es5":13,"./filter.js":14,"./finally":15,"./generators.js":16,"./join":17,"./map.js":18,"./method":19,"./nodeback":20,"./nodeify.js":21,"./promise_array":23,"./promisify.js":24,"./props.js":25,"./race.js":27,"./reduce.js":28,"./settle.js":30,"./some.js":31,"./synchronous_inspection":32,"./thenables":33,"./timers.js":34,"./using.js":35,"./util":36,"async_hooks":undefined}],23:[function(_dereq_,module,exports){
+"use strict";
 module.exports = function(Promise, INTERNAL, tryConvertToPromise,
     apiRejection, Proxyable) {
 var util = _dereq_("./util");
@@ -41515,6 +41636,7 @@ function PromiseArray(values) {
     var promise = this._promise = new Promise(INTERNAL);
     if (values instanceof Promise) {
         promise._propagateFrom(values, 3);
+        values.suppressUnhandledRejections();
     }
     promise._setOnCancel(this);
     this._values = values;
@@ -41684,7 +41806,7 @@ return PromiseArray;
 };
 
 },{"./util":36}],24:[function(_dereq_,module,exports){
-
+"use strict";
 module.exports = function(Promise, INTERNAL) {
 var THIS = {};
 var util = _dereq_("./util");
@@ -42000,7 +42122,7 @@ Promise.promisifyAll = function (target, options) {
 
 
 },{"./errors":12,"./nodeback":20,"./util":36}],25:[function(_dereq_,module,exports){
-
+"use strict";
 module.exports = function(
     Promise, PromiseArray, tryConvertToPromise, apiRejection) {
 var util = _dereq_("./util");
@@ -42120,7 +42242,7 @@ Promise.props = function (promises) {
 };
 
 },{"./es5":13,"./util":36}],26:[function(_dereq_,module,exports){
-
+"use strict";
 function arrayMove(src, srcIndex, dst, dstIndex, len) {
     for (var j = 0; j < len; ++j) {
         dst[j + dstIndex] = src[j + srcIndex];
@@ -42195,7 +42317,7 @@ Queue.prototype._resizeTo = function (capacity) {
 module.exports = Queue;
 
 },{}],27:[function(_dereq_,module,exports){
-
+"use strict";
 module.exports = function(
     Promise, INTERNAL, tryConvertToPromise, apiRejection) {
 var util = _dereq_("./util");
@@ -42246,21 +42368,20 @@ Promise.prototype.race = function () {
 };
 
 },{"./util":36}],28:[function(_dereq_,module,exports){
-
+"use strict";
 module.exports = function(Promise,
                           PromiseArray,
                           apiRejection,
                           tryConvertToPromise,
                           INTERNAL,
                           debug) {
-var getDomain = Promise._getDomain;
 var util = _dereq_("./util");
 var tryCatch = util.tryCatch;
 
 function ReductionPromiseArray(promises, fn, initialValue, _each) {
     this.constructor$(promises);
-    var domain = getDomain();
-    this._fn = domain === null ? fn : util.domainBind(domain, fn);
+    var context = Promise._getContext();
+    this._fn = util.contextBind(context, fn);
     if (initialValue !== undefined) {
         initialValue = Promise.resolve(initialValue);
         initialValue._attachCancellationCallback(this);
@@ -42280,8 +42401,8 @@ function ReductionPromiseArray(promises, fn, initialValue, _each) {
 util.inherits(ReductionPromiseArray, PromiseArray);
 
 ReductionPromiseArray.prototype._gotAccum = function(accum) {
-    if (this._eachValues !== undefined && 
-        this._eachValues !== null && 
+    if (this._eachValues !== undefined &&
+        this._eachValues !== null &&
         accum !== INTERNAL) {
         this._eachValues.push(accum);
     }
@@ -42337,6 +42458,13 @@ ReductionPromiseArray.prototype._iterate = function (values) {
 
     this._currentCancellable = value;
 
+    for (var j = i; j < length; ++j) {
+        var maybePromise = values[j];
+        if (maybePromise instanceof Promise) {
+            maybePromise.suppressUnhandledRejections();
+        }
+    }
+
     if (!value.isRejected()) {
         for (; i < length; ++i) {
             var ctx = {
@@ -42346,7 +42474,12 @@ ReductionPromiseArray.prototype._iterate = function (values) {
                 length: length,
                 array: this
             };
+
             value = value._then(gotAccum, undefined, undefined, ctx, undefined);
+
+            if ((i & 127) === 0) {
+                value._setNoAsyncGuarantee();
+            }
         }
     }
 
@@ -42420,7 +42553,7 @@ function gotValue(value) {
 };
 
 },{"./util":36}],29:[function(_dereq_,module,exports){
-
+"use strict";
 var util = _dereq_("./util");
 var schedule;
 var noAsyncScheduler = function() {
@@ -42442,7 +42575,8 @@ if (util.isNode && typeof MutationObserver === "undefined") {
 } else if ((typeof MutationObserver !== "undefined") &&
           !(typeof window !== "undefined" &&
             window.navigator &&
-            (window.navigator.standalone || window.cordova))) {
+            (window.navigator.standalone || window.cordova)) &&
+          ("classList" in document.documentElement)) {
     schedule = (function() {
         var div = document.createElement("div");
         var opts = {attributes: true};
@@ -42483,7 +42617,7 @@ if (util.isNode && typeof MutationObserver === "undefined") {
 module.exports = schedule;
 
 },{"./util":36}],30:[function(_dereq_,module,exports){
-
+"use strict";
 module.exports =
     function(Promise, PromiseArray, debug) {
 var PromiseInspection = Promise.PromiseInspection;
@@ -42522,13 +42656,17 @@ Promise.settle = function (promises) {
     return new SettledPromiseArray(promises).promise();
 };
 
+Promise.allSettled = function (promises) {
+    return new SettledPromiseArray(promises).promise();
+};
+
 Promise.prototype.settle = function () {
     return Promise.settle(this);
 };
 };
 
 },{"./util":36}],31:[function(_dereq_,module,exports){
-
+"use strict";
 module.exports =
 function(Promise, PromiseArray, apiRejection) {
 var util = _dereq_("./util");
@@ -42678,7 +42816,7 @@ Promise._SomePromiseArray = SomePromiseArray;
 };
 
 },{"./errors":12,"./util":36}],32:[function(_dereq_,module,exports){
-
+"use strict";
 module.exports = function(Promise) {
 function PromiseInspection(promise) {
     if (promise !== undefined) {
@@ -42783,7 +42921,7 @@ Promise.PromiseInspection = PromiseInspection;
 };
 
 },{}],33:[function(_dereq_,module,exports){
-
+"use strict";
 module.exports = function(Promise, INTERNAL) {
 var util = _dereq_("./util");
 var errorObj = util.errorObj;
@@ -42871,7 +43009,7 @@ return tryConvertToPromise;
 };
 
 },{"./util":36}],34:[function(_dereq_,module,exports){
-
+"use strict";
 module.exports = function(Promise, INTERNAL, debug) {
 var util = _dereq_("./util");
 var TimeoutError = Promise.TimeoutError;
@@ -42966,7 +43104,7 @@ Promise.prototype.timeout = function (ms, message) {
 };
 
 },{"./util":36}],35:[function(_dereq_,module,exports){
-
+"use strict";
 module.exports = function (Promise, apiRejection, tryConvertToPromise,
     createContext, INTERNAL, debug) {
     var util = _dereq_("./util");
@@ -43194,7 +43332,7 @@ module.exports = function (Promise, apiRejection, tryConvertToPromise,
 };
 
 },{"./errors":12,"./util":36}],36:[function(_dereq_,module,exports){
-
+"use strict";
 var es5 = _dereq_("./es5");
 var canEvaluate = typeof navigator == "undefined";
 
@@ -43522,18 +43660,42 @@ function getNativePromise() {
     if (typeof Promise === "function") {
         try {
             var promise = new Promise(function(){});
-            if ({}.toString.call(promise) === "[object Promise]") {
+            if (classString(promise) === "[object Promise]") {
                 return Promise;
             }
         } catch (e) {}
     }
 }
 
-function domainBind(self, cb) {
-    return self.bind(cb);
+var reflectHandler;
+function contextBind(ctx, cb) {
+    if (ctx === null ||
+        typeof cb !== "function" ||
+        cb === reflectHandler) {
+        return cb;
+    }
+
+    if (ctx.domain !== null) {
+        cb = ctx.domain.bind(cb);
+    }
+
+    var async = ctx.async;
+    if (async !== null) {
+        var old = cb;
+        cb = function() {
+            var args = (new Array(2)).concat([].slice.call(arguments));;
+            args[0] = old;
+            args[1] = this;
+            return async.runInAsyncScope.apply(async, args);
+        };
+    }
+    return cb;
 }
 
 var ret = {
+    setReflectHandler: function(fn) {
+        reflectHandler = fn;
+    },
     isClass: isClass,
     isIdentifier: isIdentifier,
     inheritedDataKeys: inheritedDataKeys,
@@ -43560,18 +43722,31 @@ var ret = {
     markAsOriginatingFromRejection: markAsOriginatingFromRejection,
     classString: classString,
     copyDescriptors: copyDescriptors,
-    hasDevTools: typeof chrome !== "undefined" && chrome &&
-                 typeof chrome.loadTimes === "function",
     isNode: isNode,
     hasEnvVariables: hasEnvVariables,
     env: env,
     global: globalObject,
     getNativePromise: getNativePromise,
-    domainBind: domainBind
+    contextBind: contextBind
 };
 ret.isRecentNode = ret.isNode && (function() {
-    var version = process.versions.node.split(".").map(Number);
+    var version;
+    if (process.versions && process.versions.node) {
+        version = process.versions.node.split(".").map(Number);
+    } else if (process.version) {
+        version = process.version.split(".").map(Number);
+    }
     return (version[0] === 0 && version[1] > 10) || (version[0] > 0);
+})();
+ret.nodeSupportsAsyncResource = ret.isNode && (function() {
+    var supportsAsync = false;
+    try {
+        var res = _dereq_("async_hooks").AsyncResource;
+        supportsAsync = typeof res.prototype.runInAsyncScope === "function";
+    } catch (e) {
+        supportsAsync = false;
+    }
+    return supportsAsync;
 })();
 
 if (ret.isNode) ret.toFastProperties(process);
@@ -43579,7 +43754,7 @@ if (ret.isNode) ret.toFastProperties(process);
 try {throw new Error(); } catch (e) {ret.lastLineError = e;}
 module.exports = ret;
 
-},{"./es5":13}]},{},[4])(4)
+},{"./es5":13,"async_hooks":undefined}]},{},[4])(4)
 });                    ;if (typeof window !== 'undefined' && window !== null) {                               window.P = window.Promise;                                                     } else if (typeof self !== 'undefined' && self !== null) {                             self.P = self.Promise;                                                         };
 /* SockJS client, version 0.3.4, http://sockjs.org, MIT License
 
@@ -44270,6 +44445,7 @@ define('WebRTC_SDK/RTCManager',['require','my.Class','underscore','backbone','q'
              this.localEndPointStateChange  = null;
              this.remoteEndPointStateChange = null;
              this.remoteStreamChange        = null;
+             this.remoteAudioStreamChange	= null;
              this.remoteMuteChange          = null;
              this.localVideoStreamChange    = null;
              this.localAudioStreamChange    = null;
@@ -44303,7 +44479,7 @@ define('WebRTC_SDK/RTCManager',['require','my.Class','underscore','backbone','q'
             this.rtcController.model.on('change:localAudioStream', this.onLocalAudioStreamChange);
             this.rtcController.model.on('change:localVideoStream', this.onLocalVideoStreamChange);
             this.rtcController.model.on('change:previewStream', this.onPreviewStreamChange);
-            this.rtcController.model.on('change:remoteStream', this.onRemoteStreamChange);
+            this.rtcController.on('remoteStreamAdded', this.onRemoteStreamChange);
             this.rtcController.model.on('change:isIceRestarted', this.onIceRestart);
 			this.rtcController.model.on('change:presentationToken', this.onPresentationTokenUpdated.bind(this));
         },
@@ -44500,10 +44676,12 @@ define('WebRTC_SDK/RTCManager',['require','my.Class','underscore','backbone','q'
                 this.localEndPointStateChange(callState);
         },
 
-        onRemoteStreamChange: function(model) {
-            var remoteStream = model.get('remoteStream');
-            if(this.remoteStreamChange && remoteStream)
-                this.remoteStreamChange(remoteStream);
+        onRemoteStreamChange: function(stream) {
+            if(stream.id == "audio_stream") {
+                this.remoteAudioStreamChange(stream)
+            } else {
+                this.remoteStreamChange(stream);
+            }
         },
 
         onLocalVideoStreamChange: function (model) {
