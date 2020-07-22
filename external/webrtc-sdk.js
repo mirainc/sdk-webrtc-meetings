@@ -44586,13 +44586,14 @@ define('WebRTC_SDK/RTCManager',['require','my.Class','underscore','backbone','q'
 
         initWebRTCCall : function (webrtcPairingRsp){
             Logger.debug("RTCManager :: WebRTC Pairing response ", JSON.stringify(webrtcPairingRsp));
+            var versionstring = "1.0/"+ BrowserDetector.os +" "+BrowserDetector.osVersion+"/[BROWSER: "+BrowserDetector.browser+ "" +BrowserDetector.version+"]/[UI:1.0]/[USERAGENT: WebRTC 1.0 "+window.navigator.userAgent +"]";
             var callParams = {
                 sockUrl : webrtcPairingRsp.uri,
                 sessionId : webrtcPairingRsp.pairingCode,
                 endpointDetails :  {
                     displayName: this.meetingInfo.displayName,
                     endpointType: "Browser",
-                    browserUserAgent: window.navigator.userAgent
+                    version: versionstring
                 },
 				maxBandwidth : this.maxBandwidth
              };
