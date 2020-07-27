@@ -57,6 +57,7 @@ The requirements to create applications embedded with BlueJeans Web RTC SDK are 
 | **Code Development**     | Javascript, HTML, CSS |                         |
 | **Installed Frameworks** | JQuery                | ver 1.82 or later       |
 |                          | Require JS            | ver 2.11 or later       |
+
 <br />
 <br />
 
@@ -71,6 +72,7 @@ Additionally, these business conditions must be in place in order for your custo
 | ------------------------ | --------- | ---------------------------------------- |
 | Domain whitelisting      | Req'd     | BlueJeans must add your hosting website to its domain whitelist for WebRTC calls.  The standard for Web Security (CORS) requires this whitelisting.  Contact [BlueJeans support](mailto:Support@bluejeans.com) when ready to be added to the whitelist. |
 | Meetings API Scheduling   | Req'd | Hosting web site (API's) or BlueJeans.com (User Portal) must schedule the BlueJeans Meetings. |
+
 <br />
 <br />
 <br />
@@ -91,7 +93,13 @@ BlueJeans provides this Software Development Kit with the following code and rel
 | **Require-config.js**   | Initial RequireJS boot-loader file for BlueJeans Web RTC     |
 | **defaultRTCParams.js** | Default configuration parameters for RTC session             |
 | **bjn-global.js**       | RequireJS-compliant abstraction for RTC object               |
+
 <br />
+<br />
+
+## Viewing the Example
+You can see the included example in action at https://bluejeans.github.io/sdk-webrtc-meetings/.
+
 <br />
 <br />
 
