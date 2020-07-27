@@ -18,7 +18,7 @@ console.log("(webrtcclientsdk.js) client Ref Design loading...");
 	
 	const sdkVersion = {
 		major : 1,
-		minor : 3,
+		minor : 4,
 		build : 0	
 	};
 
