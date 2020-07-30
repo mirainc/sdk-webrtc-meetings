@@ -18,7 +18,7 @@ console.log("(webrtcclientsdk.js) client Ref Design loading...");
 	
 	const sdkVersion = {
 		major : 1,
-		minor : 3,
+		minor : 4,
 		build : 0	
 	};
 
@@ -42,6 +42,7 @@ console.log("(webrtcclientsdk.js) client Ref Design loading...");
 
 	var localVideoEl = null;
 	var remoteVideoEl = null;
+	var remoteAudioEl = null;
 	var contentVideoEl = null;
 	var MediaStarted = false;  // new for ffox
 	
@@ -68,7 +69,8 @@ console.log("(webrtcclientsdk.js) client Ref Design loading...");
     var initialize = function(options) {
 		console.log("bjnrtcsdk initializing");
         localVideoEl = options.localVideoEl;
-        remoteVideoEl = options.remoteVideoEl;
+		remoteVideoEl = options.remoteVideoEl;
+		remoteAudioEl = options.remoteAudioEl;
 		contentVideoEl = options.contentVideoEl;
 
 		cbVideoMute = options.evtVideoUnmute;
@@ -90,7 +92,8 @@ console.log("(webrtcclientsdk.js) client Ref Design loading...");
 		BJN.RTCManager.localAudioStreamChange		= updateAudioPath;
         BJN.RTCManager.remoteEndPointStateChange    = onRemoteConnectionStateChange;
         BJN.RTCManager.localEndPointStateChange     = onLocalConnectionStateChange;
-        BJN.RTCManager.remoteStreamChange           = onRemoteStreamUpdated;
+		BJN.RTCManager.remoteStreamChange           = onRemoteStreamUpdated;
+		BJN.RTCManager.remoteAudioStreamChange      = onRemoteAudioStreamUpdated;
         BJN.RTCManager.error                        = onRTCError;
 		BJN.RTCManager.contentStreamChange			= onContentStreamUpdated;
 		};
@@ -182,7 +185,7 @@ console.log("(webrtcclientsdk.js) client Ref Design loading...");
 		mediaConstraints.audio.optional.push( { sourceId: dev } );
 */
 		// 5/30/2017 - bugfix pass mediaElements value as an array rather than discrete object
-		BJN.RTCManager.setSpeaker({ speakerId : dev, mediaElements : [remoteVideoEl] });
+		BJN.RTCManager.setSpeaker({ speakerId : dev, mediaElements : [remoteVideoEl, remoteAudioEl] });
 	};
 
 	var setVideoBandwidth = function(bw){
@@ -247,7 +250,18 @@ console.log("(webrtcclientsdk.js) client Ref Design loading...");
                 el: remoteVideoEl
             });
         }
-    };
+	};
+	
+	var onRemoteAudioStreamUpdated = function(stream) {
+        BJN.remoteAudioStream = stream;
+        if (stream) {
+			console.log('Remote stream updated');
+            BJN.RTCManager.renderStream({
+                stream: BJN.remoteAudioStream,
+                el: remoteAudioEl
+            });
+        }
+	};
 	
 	var onContentStreamUpdated = function(stream){
         BJN.contentStream = stream;

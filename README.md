@@ -4,23 +4,24 @@
 
 
 
-Document Version: 1.3.1
+Document Version: 1.4.0
 
-Document Date: 2019-12-02
+Document Date: 7/27/2020
 
-| Version | Date       | Who  | Description                                                  |
-| ------- | ---------- | ---- | ------------------------------------------------------------ |
-| 1.3.1   | 12/2/2019  | g1   | Update: remove optional requirement for Meeting Pool.  Make required that user's backend application schedules the meetings for the SDK to join.  Add note on disabling CORS for developers |
-| 1.3.0   | 2/21/2019  | g1   | Update webrtc-sdk.js / webrtcsdk.min.js to support Chrome SDP change |
-| 1.2.0   | 7/13/2018  | g1   | Add contentVideoEl as an initialization parameter, Expose Roster and events. |
-| 1.1.0   | 3/26/2018  | g1   | Add ability to view Content Sharing                          |
-| 1.0.2   | 10/23/2017 | g1   | add reference network requirements for WebRTC                |
-| 1.0.1   | 10/13/2017 | g1   | Update webrtcclientsdk.js file to support firefox            |
-| 1.0.0   | 10/12/2017 | g1   | Upgrade backend webrtc-sdk.js with Firefox                   |
-|         |            |      | and patch for pre-call media request                         |
-| 0.9.0   | 4/27/2017  | g1   | Initial Checkin of Client SDK doc                            |
-| 0.9.1   | 5/2/2017   | g1   | Clean-up typos.  Add revs to S/W modules                     |
-| 0.9.2   | 5/17/2017  | g1   | Update project with Corporate styling.  Adjust required build files |
+| Version | Date       | Description                                                  |
+| ------- | ---------- | ------------------------------------------------------------ |
+| 1.4.0   | 7/27/2020  | Update for compatibility with new BlueJeans video architecture. Fixes no video issues. New parameter required in initialize() to set remote audio element. |
+| 1.3.1   | 12/2/2019  | Update: remove optional requirement for Meeting Pool.  Make required that user's backend application schedules the meetings for the SDK to join.  Add note on disabling CORS for developers |
+| 1.3.0   | 2/21/2019  | Update webrtc-sdk.js / webrtcsdk.min.js to support Chrome SDP change |
+| 1.2.0   | 7/13/2018  | Add contentVideoEl as an initialization parameter, Expose Roster and events. |
+| 1.1.0   | 3/26/2018  | Add ability to view Content Sharing                          |
+| 1.0.2   | 10/23/2017 | add reference network requirements for WebRTC                |
+| 1.0.1   | 10/13/2017 | Update webrtcclientsdk.js file to support firefox            |
+| 1.0.0   | 10/12/2017 | Upgrade backend webrtc-sdk.js with Firefox                   |
+|         |            | and patch for pre-call media request                         |
+| 0.9.0   | 4/27/2017  | Initial Checkin of Client SDK doc                            |
+| 0.9.1   | 5/2/2017   | Clean-up typos.  Add revs to S/W modules                     |
+| 0.9.2   | 5/17/2017  | Update project with Corporate styling.  Adjust required build files |
 
 
 <br />
@@ -56,6 +57,7 @@ The requirements to create applications embedded with BlueJeans Web RTC SDK are 
 | **Code Development**     | Javascript, HTML, CSS |                         |
 | **Installed Frameworks** | JQuery                | ver 1.82 or later       |
 |                          | Require JS            | ver 2.11 or later       |
+
 <br />
 <br />
 
@@ -70,6 +72,7 @@ Additionally, these business conditions must be in place in order for your custo
 | ------------------------ | --------- | ---------------------------------------- |
 | Domain whitelisting      | Req'd     | BlueJeans must add your hosting website to its domain whitelist for WebRTC calls.  The standard for Web Security (CORS) requires this whitelisting.  Contact [BlueJeans support](mailto:Support@bluejeans.com) when ready to be added to the whitelist. |
 | Meetings API Scheduling   | Req'd | Hosting web site (API's) or BlueJeans.com (User Portal) must schedule the BlueJeans Meetings. |
+
 <br />
 <br />
 <br />
@@ -90,7 +93,13 @@ BlueJeans provides this Software Development Kit with the following code and rel
 | **Require-config.js**   | Initial RequireJS boot-loader file for BlueJeans Web RTC     |
 | **defaultRTCParams.js** | Default configuration parameters for RTC session             |
 | **bjn-global.js**       | RequireJS-compliant abstraction for RTC object               |
+
 <br />
+<br />
+
+## Viewing the Example
+You can see the included example in action at https://bluejeans.github.io/sdk-webrtc-meetings/.
+
 <br />
 <br />
 
@@ -157,7 +166,7 @@ Because the BlueJeans RTC Client SDK deals with real time transactions, develope
 
 ### ![](./media/api.png) **Initialize()** – Initialize RTC client environment
 
-This API initializes the WebRTC client environment in preparation for making video calls over the BlueJeans network. It links the video media into the HTML DOM, establishes the limit on network bandwidth allocated for the video media, defines the media devices accessible to the client browser session, and provides callback event handlers.
+This API initializes the WebRTC client environment in preparation for making video calls over the BlueJeans network. It links the audio and video media into the HTML DOM, establishes the limit on network bandwidth allocated for the video media, defines the media devices accessible to the client browser session, and provides callback event handlers.
 
 Initialize() should be the very first action that you perform in preparation to make Video calls.
 
@@ -173,9 +182,10 @@ The *av\_devices* object contains the available sound and video devices for the 
 
 ```Javascript
 initializationParameters : {
-   localVideoEl  : <dom element for rendering local video>,
-   remoteVideoEl : <dom element for rendering remote video>,
-   contentVideoEl: <dom element for rendering content share video>,
+   localVideoEl  : <a <video> dom element for rendering local video>,
+   remoteAudioEl : <an <audio> dom element for rendering remote audio>,
+   remoteVideoEl : <a <video> dom element for rendering remote video>,
+   contentVideoEl: <a <video> dom element for rendering content share video>,
    bandWidth     : <100..4096>, <in Kbps max allocated netwk b/w?>
    devices       : { *av_devices* }, <Media devices on users PC>
    evtVideoUnmute                 : <function>, <callback or null>

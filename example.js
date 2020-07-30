@@ -85,6 +85,7 @@ define([
 			RTCClient.initialize({
 				localVideoEl: $("#localVideo")[0],
 				remoteVideoEl : $("#remoteVideo")[0],
+				remoteAudioEl : $("#remoteAudio")[0],
 				contentVideoEl : $("#contentVideo")[0],
 				bandWidth : $("#videoBw").prop('value'),
 				devices   : BJN.localDevices,
