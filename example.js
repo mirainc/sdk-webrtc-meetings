@@ -99,13 +99,8 @@ define([
 			// Save for external access
 			BJN.RTCClient = RTCClient;	
       console.log("Raydiant: RTCClient initialized");
-      // console.log("Raydiant: Clicking mute button");
-      // $("#toggleAudioMute").click();
-
-      setTimeout(() => {
-        console.log("Raydiant: Clicking mute button");
-        $("#toggleAudioMute").click();
-      }, 3000);
+      console.log("Raydiant: Clicking mute button");
+      $("#toggleAudioMute").click();
 
 		}, function(error) {
 			console.log("Local device error " + error);
