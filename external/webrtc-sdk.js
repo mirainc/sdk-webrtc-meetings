@@ -29436,6 +29436,7 @@ define('WebRTC_SDK/manager/RTCLocalMediaManager',['require','my.Class','undersco
 		/* ============================= */
 
 		muteStreams: function(muteParams) {
+      console.log('Raydiant: --RTCLocalMediaManager.muteStreams(): async task executed')
             var mutePromise = Q.defer();
             var promises = [];
 
@@ -29454,7 +29455,9 @@ define('WebRTC_SDK/manager/RTCLocalMediaManager',['require','my.Class','undersco
 
             Q.all(promises).then(function() {
                 mutePromise.resolve();
+                console.log('Raydiant: --RTCLocalMediaManager.muteStreams(): async task fulfilled')
             }, function() {
+                console.error('Raydiant: --RTCLocalMediaManager.muteStreams(): async task rejected: Failed to mute local/remote stream')
                 Logger.error('RTCLocalMediaManager: Failed to mute local/remote stream');
             })
 
@@ -37003,6 +37006,7 @@ define('WebRTC_SDK/RTCController',['require','q','my.Class','underscore','backbo
         },
 
         muteStreams: function(params) {
+            console.log('Raydiant: --RTCController.muteStreams(): async task executed')
             var self = this;
             var connectMsgAckd = RTCTransactionManager.model.get('connectResponseReceived');
             var localAudioToggled = _.isBoolean(params.localAudio) && (params.localAudio !== this.model.get('localAudioMuted'));
@@ -37015,8 +37019,8 @@ define('WebRTC_SDK/RTCController',['require','q','my.Class','underscore','backbo
                     this.peerConnectionManager.peer.isRemoteMute = params.remoteAudio && params.remoteVideo;
                 }
             }
-
             this.localMediaManager.muteStreams(params).then(function() {
+                console.log('Raydiant: ----this.localMediaManager.muteStreams: async task executed')
                 if(!params.localMuteOnly && connectMsgAckd) {
                     if(localVideoToggled && (params.localVideo === false)) {
                         self.onLocalStreamsChanged();
@@ -37044,8 +37048,16 @@ define('WebRTC_SDK/RTCController',['require','q','my.Class','underscore','backbo
                         'localAudioMuted': localAudioMuted,
                         'localVideoMuted': localVideoMuted
                     });
-                }
+                    console.log('----this.localMediaManager.muteStreams: !params.localMuteOnly && connectMsgAckd === true')
+                  } else {
+                    console.log('----this.localMediaManager.muteStreams: !params.localMuteOnly && connectMsgAckd === false')
+                  }
+                  console.log('Raydiant: ----this.localMediaManager.muteStreams: async task fulfilled')
+                  console.log('Raydiant: --RTCController.muteStreams(): async task fulfilled')
+                  console.log('Raydiant: RTCClient.toggleAudioMute(): complete (including async task)')
+                  console.timeEnd('Raydiant: ------------------RTCClient.toggleAudioMute()------------------');
             }, function() {
+              console.log('Raydiant: --RTCController.muteStreams(): async task rejected: failed to Mute streams')
                 Logger.error("RTCController: Failed to Mute streams");
             });
         },

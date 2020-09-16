@@ -199,6 +199,8 @@ console.log("(webrtcclientsdk.js) client Ref Design loading...");
         /* ========================= */
 
 	var toggleAudioMute = function(event) {
+		console.time('Raydiant: ------------------RTCClient.toggleAudioMute()------------------');
+		console.log('Raydiant: RTCClient.toggleAudioMute(): executed')
 		var audioMuted = config.muteParams.localAudio ? true : false;
 		config.muteParams.localAudio = !audioMuted;
 		BJN.RTCManager.muteStreams(config.muteParams);		
