@@ -95,6 +95,9 @@ define([
 				evtOnError : null,
 				evtContentShareStateChange : cbContentShareStateChange
 			});
+			console.log("Raydiant: ---DEVICES---");
+			console.log("Raydiant: ",JSON.stringify(devices, null, 2));
+			console.log("Raydiant: ---DEVICES_END---");
 			
 			// Save for external access
 			BJN.RTCClient = RTCClient;	
