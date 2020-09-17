@@ -256,6 +256,14 @@ define([
 			RTCClient.leaveMeeting();
 			RTCRoster.close();
 		});
+
+		setInterval(() => {
+      $("#true-mic-status").text(
+        `BJN.RTCManager.rtcController.model.get("localAudioMuted") = ${BJN.RTCManager.rtcController.model.get(
+          "localAudioMuted"
+        )}`
+      );
+    }, 1000);
 	}
 	
 	console.log("Startng Initialization of BJN");
