@@ -18698,11 +18698,13 @@ define("backbone", ["underscore", "jquery"], (function (global) {
    * @param name      name of property to delete
    * @return promise for the return value
    */
-  Q.del = Q["delete"] = function (object, key) { // XXX legacy
+  Q.del = Q["delete"] = function (object, key) {
+    // XXX legacy
     return Q(object).dispatch("delete", [key]);
   };
 
-  Promise.prototype.del = Promise.prototype["delete"] = function (key) { // XXX legacy
+  Promise.prototype.del = Promise.prototype["delete"] = function (key) {
+    // XXX legacy
     return this.dispatch("delete", [key]);
   };
 
@@ -18719,11 +18721,13 @@ define("backbone", ["underscore", "jquery"], (function (global) {
    * @return promise for the return value
    */
   // bound locally because it is used by other methods
-  Q.mapply = Q.post = function (object, name, args) { // XXX As proposed by "Redsandro"
+  Q.mapply = Q.post = function (object, name, args) {
+    // XXX As proposed by "Redsandro"
     return Q(object).dispatch("post", [name, args]);
   };
 
-  Promise.prototype.mapply = Promise.prototype.post = function (name, args) { // XXX As proposed by "Redsandro"
+  Promise.prototype.mapply = Promise.prototype.post = function (name, args) {
+    // XXX As proposed by "Redsandro"
     return this.dispatch("post", [name, args]);
   };
 
@@ -18734,11 +18738,13 @@ define("backbone", ["underscore", "jquery"], (function (global) {
    * @param ...args   array of invocation arguments
    * @return promise for the return value
    */
-  Q.send = Q.mcall = Q.invoke = function (object, name /*...args*/) { // XXX Mark Miller's proposed parlance // XXX As proposed by "Redsandro"
+  Q.send = Q.mcall = Q.invoke = function (object, name /*...args*/) {
+    // XXX Mark Miller's proposed parlance // XXX As proposed by "Redsandro"
     return Q(object).dispatch("post", [name, array_slice(arguments, 2)]);
   };
 
-  Promise.prototype.send = Promise.prototype.mcall = Promise.prototype.invoke = function ( // XXX Mark Miller's proposed parlance // XXX As proposed by "Redsandro"
+  Promise.prototype.send = Promise.prototype.mcall = Promise.prototype.invoke = function (
+    // XXX Mark Miller's proposed parlance // XXX As proposed by "Redsandro"
     name /*...args*/
   ) {
     return this.dispatch("post", [name, array_slice(arguments, 1)]);
@@ -18987,11 +18993,13 @@ define("backbone", ["underscore", "jquery"], (function (global) {
    * given promise is rejected
    * @returns a promise for the return value of the callback
    */
-  Q.fail = Q["catch"] = function (object, rejected) { // XXX legacy
+  Q.fail = Q["catch"] = function (object, rejected) {
+    // XXX legacy
     return Q(object).then(void 0, rejected);
   };
 
-  Promise.prototype.fail = Promise.prototype["catch"] = function (rejected) { // XXX legacy
+  Promise.prototype.fail = Promise.prototype["catch"] = function (rejected) {
+    // XXX legacy
     return this.then(void 0, rejected);
   };
 
@@ -19023,11 +19031,13 @@ define("backbone", ["underscore", "jquery"], (function (global) {
    * @returns a promise for the resolution of the given promise when
    * ``fin`` is done.
    */
-  Q.fin = Q["finally"] = function (object, callback) { // XXX legacy
+  Q.fin = Q["finally"] = function (object, callback) {
+    // XXX legacy
     return Q(object)["finally"](callback);
   };
 
-  Promise.prototype.fin = Promise.prototype["finally"] = function (callback) { // XXX legacy
+  Promise.prototype.fin = Promise.prototype["finally"] = function (callback) {
+    // XXX legacy
     callback = Q(callback);
     return this.then(
       function (value) {
@@ -19243,11 +19253,13 @@ define("backbone", ["underscore", "jquery"], (function (global) {
    * will be provided by Q and appended to these arguments.
    * @returns a promise for the value or error
    */
-  Q.nmapply = Q.npost = function (object, name, args) { // XXX As proposed by "Redsandro"
+  Q.nmapply = Q.npost = function (object, name, args) {
+    // XXX As proposed by "Redsandro"
     return Q(object).npost(name, args);
   };
 
-  Promise.prototype.nmapply = Promise.prototype.npost = function (name, args) { // XXX As proposed by "Redsandro"
+  Promise.prototype.nmapply = Promise.prototype.npost = function (name, args) {
+    // XXX As proposed by "Redsandro"
     var nodeArgs = array_slice(args || []);
     var deferred = defer();
     nodeArgs.push(deferred.makeNodeResolver());
@@ -19265,7 +19277,8 @@ define("backbone", ["underscore", "jquery"], (function (global) {
    * be provided by Q and appended to these arguments.
    * @returns a promise for the value or error
    */
-  Q.nsend = Q.nmcall = Q.ninvoke = function (object, name /*...args*/) { // XXX Based on Mark Miller's proposed "send" // XXX Based on "Redsandro's" proposal
+  Q.nsend = Q.nmcall = Q.ninvoke = function (object, name /*...args*/) {
+    // XXX Based on Mark Miller's proposed "send" // XXX Based on "Redsandro's" proposal
     var nodeArgs = array_slice(arguments, 2);
     var deferred = defer();
     nodeArgs.push(deferred.makeNodeResolver());
@@ -19273,7 +19286,8 @@ define("backbone", ["underscore", "jquery"], (function (global) {
     return deferred.promise;
   };
 
-  Promise.prototype.nsend = Promise.prototype.nmcall = Promise.prototype.ninvoke = function ( // XXX Based on Mark Miller's proposed "send" // XXX Based on "Redsandro's" proposal
+  Promise.prototype.nsend = Promise.prototype.nmcall = Promise.prototype.ninvoke = function (
+    // XXX Based on Mark Miller's proposed "send" // XXX Based on "Redsandro's" proposal
     name /*...args*/
   ) {
     var nodeArgs = array_slice(arguments, 1);
