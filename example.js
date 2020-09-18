@@ -24,6 +24,7 @@ define([
 
 	
 	initializeBJN = function() {
+		console.log("Raydiant: initializing client");
 		console.log("(example.js) InitializeBJN()");
 
 		// Initiate BJN SDK, refer defaultRTCParams.js 

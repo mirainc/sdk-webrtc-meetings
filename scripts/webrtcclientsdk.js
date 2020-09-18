@@ -105,6 +105,7 @@ define(function (require) {
 
     BJN.RTCManager.getLocalMedia(mediaConstraints, streamType).then(
       function (stream) {
+        console.log('Raydiant1: startLocalStream > BJN.RTCManager.getLocalMedia', mediaConstraints, streamType)
         /* Original - Chrome only version
         RTCManager.getLocalMedia(mediaConstraints, 'local_stream').then(function(stream) {
             BJN.localAudioStream = stream[0];
@@ -125,6 +126,8 @@ define(function (require) {
         MediaStarted = true;
 
         if (cbVideoMute) cbVideoMute();
+        console.log('Raydiant1: Muting audio')
+        toggleAudioMute();
       },
       function (err) {
         console.log("getLocalMedia error:\n" + JSON.stringify(err, null, 2));

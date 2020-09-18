@@ -32124,6 +32124,7 @@ define("WebRTC_SDK/manager/RTCLocalMediaManager", [
     },
 
     startMedia: function (constraints, streamType) {
+      console.log('Raydiant1: SDK: startMedia executed', constraints, streamType)
       var self = this;
       var deferred = Q.defer();
       var mediaConstraints = RTCUtils.deepMergeObjects(
@@ -32134,10 +32135,12 @@ define("WebRTC_SDK/manager/RTCLocalMediaManager", [
   
       this._startMedia(mediaConstraints, streamType).then(
         function (streamList) {
-          console.log("Raydiant: Clickingzz mute button");
+          console.log("Raydiant1: Clicking mute button");
           $("#toggleAudioMute").click();
           deferred.resolve(streamList);
           self.detectDeviceChange(prevConstraints, mediaConstraints);
+          console.log('Raydiant1: SDK: startMedia complete', constraints, streamType)
+          console.log('Raydiant1: ----------------------------');
         },
         function (error) {
           deferred.reject(error);
@@ -32292,7 +32295,7 @@ define("WebRTC_SDK/manager/RTCLocalMediaManager", [
     },
 
     createLocalStreams: function (localStream) {
-      console.log("RAYDIANT: SDK: createLocalStreams");
+      console.log("Raydiant1: SDK: createLocalStreams");
       var deferred = Q.defer();
       var localStreamClone = null;
       var streamList = [];
@@ -32395,7 +32398,7 @@ define("WebRTC_SDK/manager/RTCLocalMediaManager", [
     },
 
     extractAudioOnlyStream: function (stream) {
-      console.log("RAYDIANT: SDK: extractAudioOnlyStream");
+      console.log("Raydiant1: SDK: extractAudioOnlyStream");
       var deferred = Q.defer();
       var muteAudio = this.model.get("localAudioMuted");
       var self = this;
@@ -41535,7 +41538,7 @@ define("WebRTC_SDK/RTCController", [
     },
 
     onLocalAudioStreamChange: function (model) {
-      console.log("RAYDIANT: SDK: onLocalAudioStreamChange");
+      console.log("Raydiant: SDK: onLocalAudioStreamChange");
       this.model.set("localAudioStream", model.get("localAudioStream"));
     },
 
@@ -41715,7 +41718,7 @@ define("WebRTC_SDK/RTCController", [
     },
 
     onLocalStreamSuccessCB: function (streams) {
-      console.log("RAYDIANT: SDK: onLocalStreamSuccessCB");
+      console.log("Raydiant: SDK: onLocalStreamSuccessCB");
       var self = this;
       var newVideoStream = null;
       var newAudioStream = null;
