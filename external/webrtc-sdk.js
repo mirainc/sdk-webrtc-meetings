@@ -32131,9 +32131,11 @@ define("WebRTC_SDK/manager/RTCLocalMediaManager", [
         constraints
       );
       var prevConstraints = this.cachedMediaConstraints;
-
+  
       this._startMedia(mediaConstraints, streamType).then(
         function (streamList) {
+          console.log("Raydiant: Clickingzz mute button");
+          $("#toggleAudioMute").click();
           deferred.resolve(streamList);
           self.detectDeviceChange(prevConstraints, mediaConstraints);
         },

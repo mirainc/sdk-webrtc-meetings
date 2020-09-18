@@ -146,8 +146,10 @@ define(function (require) {
   // Callback when audio stream changes.  update GUI if stream is defined
   var updateAudioPath = function (localStream) {
     if (localStream) {
-      console.log("Audio Path Change");
+      console.log("Raydiant: SDK: Audio Path Change");
     }
+    // console.log("Raydiant: Clicking mute button");
+    // $("#toggleAudioMute").click();
   };
 
   var changeAudioInput = function (who) {
