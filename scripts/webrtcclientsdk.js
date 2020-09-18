@@ -41,6 +41,7 @@ define(function (require) {
   var remoteVideoEl = null;
   var remoteAudioEl = null;
   var contentVideoEl = null;
+  var initialMuteParams = config.muteParams;
   var MediaStarted = false; // new for ffox
 
   // client callbacks
@@ -69,6 +70,7 @@ define(function (require) {
     remoteVideoEl = options.remoteVideoEl;
     remoteAudioEl = options.remoteAudioEl;
     contentVideoEl = options.contentVideoEl;
+    initialMuteParams = options.initialMuteParams;
 
     cbVideoMute = options.evtVideoUnmute;
     cbRemoteConnectionStateChange = options.evtRemoteConnectionStateChange;
@@ -82,7 +84,7 @@ define(function (require) {
 
     BJN.RTCManager.setBandwidth(options.bandWidth);
     MediaStarted = false;
-    startLocalStream();
+    startLocalStream(initialMuteParams);
 
     // get hooks to RTCManager callbacks
     BJN.RTCManager.localVideoStreamChange = updateSelfView;
@@ -126,8 +128,7 @@ define(function (require) {
         MediaStarted = true;
 
         if (cbVideoMute) cbVideoMute();
-        console.log('Raydiant1: Muting audio')
-        toggleAudioMute();
+        if (initialMuteParams) BJN.RTCManager.muteStreams(initialMuteParams);
       },
       function (err) {
         console.log("getLocalMedia error:\n" + JSON.stringify(err, null, 2));
@@ -199,11 +200,21 @@ define(function (require) {
   /*      Mute Controls   	 */
   /* ========================= */
 
+  var setMuteAudio = function (muteAudio) {
+    config.muteParams.localAudio = muteAudio;
+    BJN.RTCManager.muteStreams(config.muteParams);
+  };
+
+  var setMuteVideo = function (muteVideo) {
+    config.muteParams.localVideo = muteVideo;
+    BJN.RTCManager.muteStreams(config.muteParams);
+  };
+
   var toggleAudioMute = function (event) {
     console.time(
       "Raydiant: ------------------RTCClient.toggleAudioMute()------------------"
     );
-    console.log("Raydiant: RTCClient.toggleAudioMute(): executed");
+    console.log("Raydiant1: RTCClient.toggleAudioMute(): executed", config.muteParams);
     var audioMuted = config.muteParams.localAudio ? true : false;
     config.muteParams.localAudio = !audioMuted;
     BJN.RTCManager.muteStreams(config.muteParams);
@@ -292,6 +303,7 @@ define(function (require) {
 
   return {
     initialize: initialize,
+    setMuteAudio: setMuteAudio,
     toggleVideoMute: toggleVideoMute,
     toggleAudioMute: toggleAudioMute,
     changeAudioInput: changeAudioInput,

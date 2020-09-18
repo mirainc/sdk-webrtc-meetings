@@ -94,14 +94,16 @@ define([
 				evtRemoteConnectionStateChange : null,
 				evtLocalConnectionStateChange : null,
 				evtOnError : null,
-				evtContentShareStateChange : cbContentShareStateChange
+				evtContentShareStateChange : cbContentShareStateChange,
+				initialMuteParams: {
+					localAudio: true,
+					localVideo: true,
+				}
 			});
 			
 			// Save for external access
 			BJN.RTCClient = RTCClient;	
       console.log("Raydiant: RTCClient initialized");
-      // console.log("Raydiant: Clicking mute button");
-      // $("#toggleAudioMute").click();
 
 		}, function(error) {
 			console.log("Local device error " + error);

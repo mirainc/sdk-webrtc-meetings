@@ -32135,8 +32135,8 @@ define("WebRTC_SDK/manager/RTCLocalMediaManager", [
   
       this._startMedia(mediaConstraints, streamType).then(
         function (streamList) {
-          console.log("Raydiant1: Clicking mute button");
-          $("#toggleAudioMute").click();
+          // console.log("Raydiant1: Clicking mute button");
+          // $("#toggleAudioMute").click();
           deferred.resolve(streamList);
           self.detectDeviceChange(prevConstraints, mediaConstraints);
           console.log('Raydiant1: SDK: startMedia complete', constraints, streamType)
