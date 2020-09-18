@@ -29122,6 +29122,7 @@ define('WebRTC_SDK/manager/RTCLocalMediaManager',['require','my.Class','undersco
         },
 
         createLocalStreams: function(localStream) {
+          console.log('RAYDIANT: SDK: createLocalStreams')
             var deferred = Q.defer();   
             var localStreamClone    = null;
             var streamList          = [];
@@ -29204,6 +29205,7 @@ define('WebRTC_SDK/manager/RTCLocalMediaManager',['require','my.Class','undersco
         },
 
         extractAudioOnlyStream: function(stream) {
+            console.log('RAYDIANT: SDK: extractAudioOnlyStream')
             var deferred = Q.defer();
             var muteAudio = this.model.get('localAudioMuted');
             var self = this;
@@ -36965,6 +36967,7 @@ define('WebRTC_SDK/RTCController',['require','q','my.Class','underscore','backbo
         },
 
         onLocalAudioStreamChange: function(model) {
+            console.log('RAYDIANT: SDK: onLocalAudioStreamChange')
             this.model.set('localAudioStream', model.get('localAudioStream'));
         },
 
@@ -37115,6 +37118,7 @@ define('WebRTC_SDK/RTCController',['require','q','my.Class','underscore','backbo
         },
 
         onLocalStreamSuccessCB: function(streams) {
+            console.log('RAYDIANT: SDK: onLocalStreamSuccessCB')
             var self                    = this;
             var newVideoStream          = null;
             var newAudioStream          = null;
