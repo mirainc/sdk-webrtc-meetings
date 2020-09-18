@@ -100,7 +100,14 @@ define([
 
         // Save for external access
         BJN.RTCClient = RTCClient;
-        alert("BJN initialized");
+        console.log("Raydiant: RTCClient initialized");
+        // console.log("Raydiant: Clicking mute button");
+        // $("#toggleAudioMute").click();
+
+        setTimeout(() => {
+          console.log("Raydiant: Clicking mute button");
+          $("#toggleAudioMute").click();
+        }, 3000);
       },
       function (error) {
         console.log("Local device error " + error);
@@ -249,8 +256,4 @@ define([
   console.log("Startng Initialization of BJN");
   initializeBJN();
   maptoUI();
-  setTimeout(() => {
-    alert("Clicking mute button");
-    $("#toggleAudioMute").click();
-  }, 50);
 });
