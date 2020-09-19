@@ -12,7 +12,12 @@ define([
 
 ], function($, _, RTCManager, defaultRTCParams, BJN, RTCClient, RTCRoster ) {
 
-    console.log("(example.js): BJN WebRTC Example");
+	var initialMuteParams = {
+		localAudio: true,
+		localVideo: true
+	};
+
+	console.log("(example.js): BJN WebRTC Example");
 	
 	$("#joinMeeting, #leaveMeeting").click(function(){
 		$(this).addClass("hidden");
@@ -94,6 +99,7 @@ define([
 				evtLocalConnectionStateChange : null,
 				evtOnError : null,
 				evtContentShareStateChange : cbContentShareStateChange,
+				initialMuteParams: initialMuteParams
 			});
 			
 			// Save for external access
@@ -111,7 +117,18 @@ define([
 
 	function setMuteButton(muted){
 		var updatedText = muted ? "Show Video" : "Mute Video";
-		$("#toggleVideoMute").html(updatedText);	
+		$("#toggleVideoMute").html(updatedText);
+		if (muted) {
+			$("#toggleVideoMute").addClass("muted");
+		}
+	};
+
+	function setMuteAudioButton(muted){
+		var updatedText = muted ? "Unmute Audio" : "Mute Audio";
+		$("#toggleAudioMute").html(updatedText);
+		if (muted) {
+			$("#toggleAudioMute").addClass("muted");
+		}
 	};
 	
 	function cbContentShareStateChange(isShare){
@@ -198,6 +215,15 @@ define([
 
 	maptoUI = function() {
 		console.log("(example.js) maptoUI()");
+		// Initial UI state
+		if (_.has(initialMuteParams, 'localAudio')) {
+			setMuteAudioButton(initialMuteParams.localAudio)
+		}
+
+		if (_.has(initialMuteParams, 'localVideo')) {
+			setMuteButton(initialMuteParams.localVideo)
+		}
+
 		// Device and Connection UI Handlers
 		$("#audioIn").change( function() {
 			var who = $("#audioIn").prop('selectedIndex');
@@ -227,8 +253,8 @@ define([
 		// Mute UI handlers
 		$("#toggleAudioMute").click(function() {
 			var muted = RTCClient.toggleAudioMute();
-			var updatedText = muted ? "Unmute Audio" : "Mute Audio";
-			$("#toggleAudioMute").html(updatedText);
+			if (muted)
+				setMuteAudioButton(muted)
 			console.log(muted ? "Audio is Muted now" : "Audio is Unmuted now");	
 		});
 

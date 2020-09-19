@@ -84,7 +84,7 @@ define(function (require) {
 
     BJN.RTCManager.setBandwidth(options.bandWidth);
     MediaStarted = false;
-    startLocalStream();
+    startLocalStream(true);
 
     // get hooks to RTCManager callbacks
     BJN.RTCManager.localVideoStreamChange = updateSelfView;
@@ -101,7 +101,7 @@ define(function (require) {
   // stream is an array of stream
   // stream[0] - local audio stream
   // stream[1] - local video stream
-  var startLocalStream = function () {
+  var startLocalStream = function (initializing) {
     var streamType = "local_stream";
     if (MediaStarted) streamType = "preview_stream";
 
@@ -122,19 +122,27 @@ define(function (require) {
           }
         }
 
-        updateSelfView(BJN.localVideoStream);
+        updateSelfView(BJN.localVideoStream, initializing);
         //Uncomment the below line, if we want to change device in-meeting
         MediaStarted = true;
 
+        if (initializing) {
+          var shouldMuteAudio =
+            initialMuteParams && initialMuteParams.localAudio;
+          if (shouldMuteAudio) {
+            setMuteAudio(true);
+          }
+
+          var shouldMuteVideo =
+            initialMuteParams && initialMuteParams.localVideo;
+          if (shouldMuteVideo) {
+            setMuteVideo(true);
+            // Video muted, no need to call cbVideoMute()
+            return;
+          }
+        }
+
         if (cbVideoMute) cbVideoMute();
-
-        if (_.has(initialMuteParams, 'localAudio')) {
-          setMuteAudio(initialMuteParams.localAudio)
-        }
-
-        if (_.has(initialMuteParams, 'localVideo')) {
-          setMuteVideo(initialMuteParams.localVideo)
-        }
       },
       function (err) {
         console.log("getLocalMedia error:\n" + JSON.stringify(err, null, 2));
@@ -143,12 +151,19 @@ define(function (require) {
   };
 
   //Callback for local video stream change, it can be used to render self view when the stream is available
-  var updateSelfView = function (localStream) {
+  var updateSelfView = function (localStream, initializing) {
     if (localStream) {
       BJN.RTCManager.renderSelfView({
         stream: localStream,
         el: localVideoEl,
       });
+      if (initializing) {
+        var shouldMuteVideo = initialMuteParams && initialMuteParams.localVideo;
+        if (!shouldMuteVideo && cbVideoMute) {
+          cbVideoMute(false);
+        }
+        return;
+      }
       if (cbVideoMute) cbVideoMute(false);
     } else console.log("updateSelfView no stream!!!");
   };
@@ -309,6 +324,7 @@ define(function (require) {
   return {
     initialize: initialize,
     setMuteAudio: setMuteAudio,
+    setMuteVideo: setMuteVideo,
     toggleVideoMute: toggleVideoMute,
     toggleAudioMute: toggleAudioMute,
     changeAudioInput: changeAudioInput,
