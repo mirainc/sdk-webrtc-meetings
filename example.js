@@ -216,11 +216,11 @@ define([
 	maptoUI = function() {
 		console.log("(example.js) maptoUI()");
 		// Initial UI state
-		if (_.has(initialMuteParams, 'localAudio')) {
+		if (initialMuteParams && initialMuteParams.localAudio) {
 			setMuteAudioButton(initialMuteParams.localAudio)
 		}
 
-		if (_.has(initialMuteParams, 'localVideo')) {
+		if (initialMuteParams && initialMuteParams.localVideo) {
 			setMuteButton(initialMuteParams.localVideo)
 		}
 
