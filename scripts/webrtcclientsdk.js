@@ -107,7 +107,6 @@ define(function (require) {
 
     BJN.RTCManager.getLocalMedia(mediaConstraints, streamType).then(
       function (stream) {
-        console.log('Raydiant1: startLocalStream > BJN.RTCManager.getLocalMedia', mediaConstraints, streamType)
         /* Original - Chrome only version
         RTCManager.getLocalMedia(mediaConstraints, 'local_stream').then(function(stream) {
             BJN.localAudioStream = stream[0];
@@ -157,10 +156,8 @@ define(function (require) {
   // Callback when audio stream changes.  update GUI if stream is defined
   var updateAudioPath = function (localStream) {
     if (localStream) {
-      console.log("Raydiant: SDK: Audio Path Change");
+      console.log("Audio Path Change");
     }
-    // console.log("Raydiant: Clicking mute button");
-    // $("#toggleAudioMute").click();
   };
 
   var changeAudioInput = function (who) {
@@ -223,10 +220,6 @@ define(function (require) {
   };
 
   var toggleAudioMute = function (event) {
-    console.time(
-      "Raydiant: ------------------RTCClient.toggleAudioMute()------------------"
-    );
-    console.log("Raydiant1: RTCClient.toggleAudioMute(): executed", config.muteParams);
     var audioMuted = config.muteParams.localAudio ? true : false;
     config.muteParams.localAudio = !audioMuted;
     BJN.RTCManager.muteStreams(config.muteParams);
