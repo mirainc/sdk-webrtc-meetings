@@ -41,7 +41,7 @@ define(function (require) {
   var remoteVideoEl = null;
   var remoteAudioEl = null;
   var contentVideoEl = null;
-  var initialMuteParams = config.muteParams;
+  var initialMuteParams = null;
   var MediaStarted = false; // new for ffox
 
   // client callbacks
@@ -84,7 +84,7 @@ define(function (require) {
 
     BJN.RTCManager.setBandwidth(options.bandWidth);
     MediaStarted = false;
-    startLocalStream(initialMuteParams);
+    startLocalStream();
 
     // get hooks to RTCManager callbacks
     BJN.RTCManager.localVideoStreamChange = updateSelfView;
@@ -128,7 +128,14 @@ define(function (require) {
         MediaStarted = true;
 
         if (cbVideoMute) cbVideoMute();
-        if (initialMuteParams) BJN.RTCManager.muteStreams(initialMuteParams);
+
+        if (_.has(initialMuteParams, 'localAudio')) {
+          setMuteAudio(initialMuteParams.localAudio)
+        }
+
+        if (_.has(initialMuteParams, 'localVideo')) {
+          setMuteVideo(initialMuteParams.localVideo)
+        }
       },
       function (err) {
         console.log("getLocalMedia error:\n" + JSON.stringify(err, null, 2));
@@ -207,6 +214,11 @@ define(function (require) {
 
   var setMuteVideo = function (muteVideo) {
     config.muteParams.localVideo = muteVideo;
+    BJN.RTCManager.muteStreams(config.muteParams);
+  };
+
+  var setMuteParams = function (muteParms) {
+    config.muteParams = muteParms;
     BJN.RTCManager.muteStreams(config.muteParams);
   };
 

@@ -95,10 +95,6 @@ define([
 				evtLocalConnectionStateChange : null,
 				evtOnError : null,
 				evtContentShareStateChange : cbContentShareStateChange,
-				initialMuteParams: {
-					localAudio: true,
-					localVideo: true,
-				}
 			});
 			
 			// Save for external access
