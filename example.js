@@ -94,7 +94,6 @@ define([
 				contentVideoEl : $("#contentVideo")[0],
 				bandWidth : $("#videoBw").prop('value'),
 				devices   : BJN.localDevices,
-				evtVideoUnmute : unmuteVideo,
 				evtRemoteConnectionStateChange : null,
 				evtLocalConnectionStateChange : null,
 				evtOnError : null,
@@ -111,23 +110,25 @@ define([
 		});
 	}
 	
-	function unmuteVideo() {
-		setMuteButton(false);
-	};
-
-	function setMuteButton(muted){
+	function setMuteVideoButton(muted){
 		var updatedText = muted ? "Show Video" : "Mute Video";
 		$("#toggleVideoMute").html(updatedText);
+
 		if (muted) {
 			$("#toggleVideoMute").addClass("muted");
+		} else {
+			$("#toggleVideoMute").removeClass("muted");
 		}
 	};
 
 	function setMuteAudioButton(muted){
 		var updatedText = muted ? "Unmute Audio" : "Mute Audio";
+
 		$("#toggleAudioMute").html(updatedText);
 		if (muted) {
 			$("#toggleAudioMute").addClass("muted");
+		} else {
+			$("#toggleAudioMute").removeClass("muted");
 		}
 	};
 	
@@ -221,7 +222,7 @@ define([
 		}
 
 		if (initialMuteParams && initialMuteParams.localVideo) {
-			setMuteButton(initialMuteParams.localVideo)
+			setMuteVideoButton(initialMuteParams.localVideo)
 		}
 
 		// Device and Connection UI Handlers
@@ -253,15 +254,13 @@ define([
 		// Mute UI handlers
 		$("#toggleAudioMute").click(function() {
 			var muted = RTCClient.toggleAudioMute();
-			if (muted)
-				setMuteAudioButton(muted)
+			setMuteAudioButton(muted)
 			console.log(muted ? "Audio is Muted now" : "Audio is Unmuted now");	
 		});
 
 		$("#toggleVideoMute").click(function() {
 			var muted = RTCClient.toggleVideoMute();
-			if(muted)
-				setMuteButton(muted);
+			setMuteVideoButton(muted);
 		});
 
 
