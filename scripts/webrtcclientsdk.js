@@ -122,7 +122,7 @@ define(function (require) {
           }
         }
 
-        updateSelfView(BJN.localVideoStream, initializing);
+        updateSelfView(BJN.localVideoStream);
         //Uncomment the below line, if we want to change device in-meeting
         MediaStarted = true;
 
