@@ -32131,7 +32131,7 @@ define("WebRTC_SDK/manager/RTCLocalMediaManager", [
         constraints
       );
       var prevConstraints = this.cachedMediaConstraints;
-  
+
       this._startMedia(mediaConstraints, streamType).then(
         function (streamList) {
           deferred.resolve(streamList);
@@ -41584,6 +41584,7 @@ define("WebRTC_SDK/RTCController", [
             params.remoteAudio && params.remoteVideo;
         }
       }
+
       this.localMediaManager.muteStreams(params).then(
         function () {
           if (!params.localMuteOnly && connectMsgAckd) {
