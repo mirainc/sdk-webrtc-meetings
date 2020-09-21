@@ -137,11 +137,9 @@ define(function (require) {
             initialMuteParams && initialMuteParams.localVideo;
           if (shouldMuteVideo) {
             setMuteVideo(true);
-            // Video muted, no need to call cbVideoMute()
-            return;
           }
         }
-
+        
         if (cbVideoMute) cbVideoMute();
       },
       function (err) {
@@ -151,19 +149,12 @@ define(function (require) {
   };
 
   //Callback for local video stream change, it can be used to render self view when the stream is available
-  var updateSelfView = function (localStream, initializing) {
+  var updateSelfView = function (localStream) {
     if (localStream) {
       BJN.RTCManager.renderSelfView({
         stream: localStream,
         el: localVideoEl,
       });
-      if (initializing) {
-        var shouldMuteVideo = initialMuteParams && initialMuteParams.localVideo;
-        if (!shouldMuteVideo && cbVideoMute) {
-          cbVideoMute(false);
-        }
-        return;
-      }
       if (cbVideoMute) cbVideoMute(false);
     } else console.log("updateSelfView no stream!!!");
   };
