@@ -70,7 +70,7 @@ Additionally, these business conditions must be in place in order for your custo
 
 | Business Requirement     | Condition | Description                              |
 | ------------------------ | --------- | ---------------------------------------- |
-| Domain whitelisting      | Req'd     | BlueJeans must add your hosting website to its domain whitelist for WebRTC calls.  The standard for Web Security (CORS) requires this whitelisting.  Contact [BlueJeans support](mailto:Support@bluejeans.com) when ready to be added to the whitelist. |
+| Domain whitelisting      | Req'd     | BlueJeans must add your hosting website to its domain whitelist for WebRTC calls.  The standard for Web Security (CORS) requires this whitelisting.  Contact [BlueJeans support](https://support.bluejeans.com/s/contactsupport) when ready to be added to the whitelist. |
 | Meetings API Scheduling   | Req'd | Hosting web site (API's) or BlueJeans.com (User Portal) must schedule the BlueJeans Meetings. |
 
 <br />

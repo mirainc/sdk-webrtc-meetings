@@ -1,6 +1,6 @@
 # WebRTC Client SDK
 ## Release Notes:  ver 1.2.0
-### July 2018,  Glenn Inn,  Technical Lead API & Partnerships
+### July 2018,  BlueJeans Network
 
 ![BlueJeans](./media/927.png)
 
